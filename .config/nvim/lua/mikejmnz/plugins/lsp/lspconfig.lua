@@ -69,7 +69,7 @@ return {
 			local hl = "DiagnosticSign" .. type
 			vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
 		end
-
+		--
 		-- configure html server
 		-- lspconfig["html"].setup({
 		--   capabilities = capabilities,
@@ -131,10 +131,68 @@ return {
 		--   filetypes = { "html", "typescriptreact", "javascriptreact", "css", "sass", "scss", "less", "svelte" },
 		-- })
 
-		-- configure python server
+		-- Python virtual env detection
+		local util = require("lspconfig/util")
+		local path = util.path
+		local function file_exists(name)
+			local f = io.open(name, "r")
+			if f ~= nil then
+				io.close(f)
+				return true
+			else
+				return false
+			end
+		end
+		local function get_python_path(workspace)
+			-- Use activated virtualenv.
+			if vim.env.VIRTUAL_ENV then
+				return path.join(vim.env.VIRTUAL_ENV, "bin", "python")
+			end
+
+			-- Find and use virtualenv in workspace directory.
+			for _, pattern in ipairs({ "*", ".*" }) do
+				local match = vim.fn.glob(path.join(workspace, pattern, "pyvenv.cfg"))
+				if match ~= "" then
+					return path.join(path.dirname(match), "bin", "python")
+				end
+			end
+
+			local default_venv_path = path.join(
+				vim.env.HOME,
+				"virtualenvs",
+				"nvim-venv",
+				"bin",
+				"python",
+				"~/Documents/localDocuments/Jira_Reports"
+			)
+			if file_exists(default_venv_path) then
+				return default_venv_path
+			end
+
+			-- Default virtual environment
+			--   return path.join(vim.env.HOME, "virtualenvs", "nvim-venv", "bin", "python")
+
+			-- Fallback to system Python.
+			return util.exepath("python3") or util.exepath("python") or "python"
+		end
+
 		lspconfig["pyright"].setup({
 			capabilities = capabilities,
 			on_attach = on_attach,
+
+			-- Python virtual env detection
+			-- lspconfig.util.path
+			-- before_init = function(_, config)
+			-- 	config.settings.python.pythonPath = get_python_path(config.root_dir)
+			-- end,
+			settings = {
+				python = {
+					analysis = {
+						autoSearchPaths = true,
+						extraPaths = { "~/Documents/localDocuments/" },
+					},
+				},
+			},
 		})
 
 		-- configure lua server (with special settings)
@@ -156,6 +214,11 @@ return {
 					},
 				},
 			},
+		})
+
+		lspconfig["jqls"].setup({
+			capabilities = capabilities,
+			on_attach = on_attach,
 		})
 	end,
 }

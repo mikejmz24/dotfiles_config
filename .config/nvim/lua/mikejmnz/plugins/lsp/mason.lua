@@ -36,6 +36,7 @@ return {
 				-- "graphql",
 				-- "emmet_ls",
 				-- "prismals",
+				"jqls",
 				"pyright",
 			},
 			-- auto-install configured servers (with lspconfig)
@@ -50,6 +51,7 @@ return {
 				"black", -- python formatter
 				"pylint", -- python linter
 				-- "eslint_d", -- js linter
+				"jqls",
 			},
 		})
 	end,

@@ -19,6 +19,7 @@ return {
 				"black", -- python formatter
 				"pylint", -- python linter
 				-- "eslint_d", -- js linter
+				"jq", -- json formatter
 			},
 		})
 
@@ -43,6 +44,7 @@ return {
 				formatting.stylua, -- lua formatter
 				formatting.isort,
 				formatting.black,
+				formatting.jq,
 				diagnostics.pylint,
 				-- diagnostics.eslint_d.with({ -- js/ts linter
 				--   condition = function(utils)
