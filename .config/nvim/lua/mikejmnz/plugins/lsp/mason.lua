@@ -36,6 +36,7 @@ return {
 				-- "graphql",
 				-- "emmet_ls",
 				-- "prismals",
+				"gopls",
 				"jqls",
 				"pyright",
 			},
@@ -51,6 +52,10 @@ return {
 				"black", -- python formatter
 				"pylint", -- python linter
 				-- "eslint_d", -- js linter
+				"golangci-lint", -- go linter
+				"gofumpt", -- go formatter
+				"goimports", -- go formatter
+				"gomodifytags", -- go formatter
 				"jqls",
 			},
 		})

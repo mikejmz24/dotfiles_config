@@ -24,7 +24,6 @@ return {
 				},
 				-- ensure these language parsers are installed
 				ensure_installed = {
-					--          "json",
 					--         "javascript",
 					--          "typescript",
 					--          "tsx",
@@ -36,12 +35,14 @@ return {
 					--          "markdown_inline",
 					--          "svelte",
 					--          "graphql",
+					"json",
 					"bash",
 					"lua",
 					"vim",
 					"dockerfile",
 					"gitignore",
 					"python",
+					"go",
 					--          "query",
 				},
 				incremental_selection = {
