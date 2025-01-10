@@ -14,12 +14,13 @@ return {
 
 		mason_null_ls.setup({
 			ensure_installed = {
-				-- "prettier", -- prettier formatter
+				"prettier", -- prettier formatter
 				"stylua", -- lua formatter
 				"black", -- python formatter
 				"pylint", -- python linter
 				-- "eslint_d", -- js linter
 				"jq", -- json formatter
+				"templ", -- Go templ
 			},
 		})
 
@@ -42,6 +43,7 @@ return {
 				--   extra_filetypes = { "svelte" },
 				-- }), -- js/ts formatter
 				formatting.stylua, -- lua formatter
+				formatting.prettier,
 				formatting.isort,
 				formatting.black,
 				formatting.jq,

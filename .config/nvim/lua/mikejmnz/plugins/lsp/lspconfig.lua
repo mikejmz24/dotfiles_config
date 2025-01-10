@@ -71,10 +71,10 @@ return {
 		end
 		--
 		-- configure html server
-		-- lspconfig["html"].setup({
-		--   capabilities = capabilities,
-		--   on_attach = on_attach,
-		-- })
+		lspconfig["html-lsp"].setup({
+			capabilities = capabilities,
+			on_attach = on_attach,
+		})
 
 		-- configure typescript server with plugin
 		-- lspconfig["tsserver"].setup({
@@ -226,5 +226,16 @@ return {
 			capabilities = capabilities,
 			on_attach = on_attach,
 		})
+
+		lspconfig["templ"].setup({
+			capabilities = capabilities,
+			on_attach = on_attach,
+			cmd = { "templ", "lsp" },
+			filetypes = { "html", "templ" },
+		})
+		-- 	lspconfig["htmx-lsp"].setup({
+		-- 		capabilities = capabilities,
+		-- 		on_attach = on_attach,
+		-- 	})
 	end,
 }
