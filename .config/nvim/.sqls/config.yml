@@ -1,0 +1,11 @@
+connections: []
+format:
+  uppercase: true
+  linesBetweenQueries: 2
+  keywordCase: upper
+  indentStyle: standard
+  maxColumnLength: 120
+  reservedNewlines: true
+  spaceAfterParentheses: true
+  commaPosition: after
+  indentSize: 2

@@ -23,6 +23,7 @@ require("lazy").setup({ { import = "mikejmnz.plugins" }, { import = "mikejmnz.pl
 		notify = false,
 	},
 })
+
 -- require("lazy").setup({ { import = "mikejmnz.plugins" }, { import = "mikejmnz.plugins.lsp"} }, {
 -- require("lazy").setup({
 --	install = {

@@ -12,6 +12,7 @@ return {
 
 	-- Add your other plugins that have configuration files
 	require("mikejmnz.plugins.colorscheme"),
+	require("mikejmnz.plugins.conform"),
 	require("mikejmnz.plugins.comment"),
 	require("mikejmnz.plugins.formatting"),
 	require("mikejmnz.plugins.linting"),
@@ -21,7 +22,6 @@ return {
 	require("mikejmnz.plugins.lualine"),
 	require("mikejmnz.plugins.nvim-autopairs"),
 	require("mikejmnz.plugins.nvim-cmp"),
-	require("mikejmnz.plugins.nvim-neotest"),
 	require("mikejmnz.plugins.nvim-treesitter"),
 	require("mikejmnz.plugins.nvim-treesitter-text-objects"),
 	require("mikejmnz.plugins.nvim-web-devicons"),

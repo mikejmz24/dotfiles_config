@@ -47,6 +47,7 @@ return {
 				formatting.isort,
 				formatting.black,
 				formatting.jq,
+				formatting.sqlfluff,
 				diagnostics.pylint,
 				-- diagnostics.eslint_d.with({ -- js/ts linter
 				--   condition = function(utils)

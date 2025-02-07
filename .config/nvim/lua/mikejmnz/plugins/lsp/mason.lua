@@ -41,6 +41,7 @@ return {
 				"gopls",
 				"jqls",
 				"pyright",
+				"sqlls",
 			},
 			-- auto-install configured servers (with lspconfig)
 			automatic_installation = true, -- not the same as ensure_installed
@@ -59,6 +60,7 @@ return {
 				"goimports", -- go formatter
 				"gomodifytags", -- go formatter
 				"jqls",
+				-- "sqlfluff",
 			},
 		})
 	end,

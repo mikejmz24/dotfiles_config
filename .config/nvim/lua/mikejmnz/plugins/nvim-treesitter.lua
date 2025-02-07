@@ -46,7 +46,8 @@ return {
 					"templ",
 					"make",
 					"awk",
-					--          "query",
+					"sql",
+					"query",
 				},
 				incremental_selection = {
 					enable = true,

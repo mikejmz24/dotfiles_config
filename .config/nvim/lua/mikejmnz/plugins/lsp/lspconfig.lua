@@ -71,7 +71,7 @@ return {
 		end
 		--
 		-- configure html server
-		lspconfig["html-lsp"].setup({
+		lspconfig["html"].setup({
 			capabilities = capabilities,
 			on_attach = on_attach,
 		})
@@ -132,49 +132,49 @@ return {
 		-- })
 
 		-- Python virtual env detection
-		local util = require("lspconfig/util")
-		local path = util.path
-		local function file_exists(name)
-			local f = io.open(name, "r")
-			if f ~= nil then
-				io.close(f)
-				return true
-			else
-				return false
-			end
-		end
-		local function get_python_path(workspace)
-			-- Use activated virtualenv.
-			if vim.env.VIRTUAL_ENV then
-				return path.join(vim.env.VIRTUAL_ENV, "bin", "python")
-			end
-
-			-- Find and use virtualenv in workspace directory.
-			for _, pattern in ipairs({ "*", ".*" }) do
-				local match = vim.fn.glob(path.join(workspace, pattern, "pyvenv.cfg"))
-				if match ~= "" then
-					return path.join(path.dirname(match), "bin", "python")
-				end
-			end
-
-			local default_venv_path = path.join(
-				vim.env.HOME,
-				"virtualenvs",
-				"nvim-venv",
-				"bin",
-				"python",
-				"~/Documents/localDocuments/Jira_Reports"
-			)
-			if file_exists(default_venv_path) then
-				return default_venv_path
-			end
-
-			-- Default virtual environment
-			--   return path.join(vim.env.HOME, "virtualenvs", "nvim-venv", "bin", "python")
-
-			-- Fallback to system Python.
-			return util.exepath("python3") or util.exepath("python") or "python"
-		end
+		-- local util = require("lspconfig/util")
+		-- local path = util.path
+		-- local function file_exists(name)
+		-- 	local f = io.open(name, "r")
+		-- 	if f ~= nil then
+		-- 		io.close(f)
+		-- 		return true
+		-- 	else
+		-- 		return false
+		-- 	end
+		-- end
+		-- local function get_python_path(workspace)
+		-- 	-- Use activated virtualenv.
+		-- 	if vim.env.VIRTUAL_ENV then
+		-- 		return path.join(vim.env.VIRTUAL_ENV, "bin", "python")
+		-- 	end
+		--
+		-- 	-- Find and use virtualenv in workspace directory.
+		-- 	for _, pattern in ipairs({ "*", ".*" }) do
+		-- 		local match = vim.fn.glob(path.join(workspace, pattern, "pyvenv.cfg"))
+		-- 		if match ~= "" then
+		-- 			return path.join(path.dirname(match), "bin", "python")
+		-- 		end
+		-- 	end
+		--
+		-- 	local default_venv_path = path.join(
+		-- 		vim.env.HOME,
+		-- 		"virtualenvs",
+		-- 		"nvim-venv",
+		-- 		"bin",
+		-- 		"python",
+		-- 		"~/Documents/localDocuments/Jira_Reports"
+		-- 	)
+		-- 	if file_exists(default_venv_path) then
+		-- 		return default_venv_path
+		-- 	end
+		--
+		-- 	-- Default virtual environment
+		-- 	--   return path.join(vim.env.HOME, "virtualenvs", "nvim-venv", "bin", "python")
+		--
+		-- 	-- Fallback to system Python.
+		-- 	return util.exepath("python3") or util.exepath("python") or "python"
+		-- end
 
 		lspconfig["pyright"].setup({
 			capabilities = capabilities,
@@ -237,5 +237,25 @@ return {
 		-- 		capabilities = capabilities,
 		-- 		on_attach = on_attach,
 		-- 	})
+		-- lspconfig["sqls"].setup({
+		-- 	capabilities = capabilities,
+		-- 	on_attach = function(client, bufnr)
+		-- 		client.server_capabilities.documentFormattingProvider = false -- Disable sqls' formatter
+		-- 		on_attach(client, bufnr) -- Your existing on_attach logic
+		-- 	end,
+		-- 	cmd = { "sqls", "up", "--method", "stdio" },
+		-- 	filetypes = { "sql", "mysql", "postgresql" },
+		-- 	root_dir = function(fname)
+		-- 		local util = require("lspconfig.util")
+		-- 		return util.root_pattern(".git")(fname)
+		-- 			or util.root_pattern("init.sql", "schema.sql")(fname)
+		-- 			or vim.fn.getcwd()
+		-- 	end,
+		-- 	settings = {
+		-- 		sqls = {
+		-- 			format = false, -- Important: Keep this false
+		-- 		},
+		-- 	},
+		-- })
 	end,
 }
