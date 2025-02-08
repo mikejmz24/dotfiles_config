@@ -5,6 +5,9 @@ local keymap = vim.keymap
 
 keymap.set("n", "<leader>nh", ":nohl<CR>", { desc = "Clear search highlights" })
 
+-- Custom SQL formatter with sqlfluff
+-- keymap.set("n", "<leader>sf", ":SqlFluffFormat<CR>", { silent = true })
+
 -- Window management
 keymap.set("n", "<leader>sv", "<C-w>v", { desc = "Split window vertically" })
 keymap.set("n", "<leader>sh", "<C-w>s", { desc = "Split window horizontally" })

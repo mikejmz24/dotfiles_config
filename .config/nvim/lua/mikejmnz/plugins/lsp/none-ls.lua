@@ -42,18 +42,24 @@ return {
 				-- formatting.prettier.with({
 				--   extra_filetypes = { "svelte" },
 				-- }), -- js/ts formatter
-				formatting.stylua, -- lua formatter
-				formatting.prettier,
-				formatting.isort,
-				formatting.black,
-				formatting.jq,
-				formatting.sqlfluff,
-				diagnostics.pylint,
+				-- formatting.stylua, -- lua formatter
+				-- formatting.prettier,
+				-- formatting.isort,
+				-- formatting.black,
+				-- formatting.jq,
+				-- formatting.sqlfluff,
 				-- diagnostics.eslint_d.with({ -- js/ts linter
 				--   condition = function(utils)
 				--     return utils.root_has_file({ ".eslintrc.js", ".eslintrc.cjs" }) -- only enable if root has .eslintrc.js or .eslintrc.cjs
 				--   end,
 				-- }),
+				diagnostics.pylint,
+				formatting.sqlfluff.with({ filetypes = { "sql", "mysql", "postgresql" } }),
+				formatting.stylua.with({ filetypes = { "lua" } }),
+				formatting.prettier.with({
+					filetypes = { "javascript", "typescript", "jsx", "tsx", "html", "css", "scss", "less", "json" },
+				}), -- Add all relevant filetypes
+				-- ... other formatters
 			},
 			-- configure format on save
 			on_attach = function(current_client, bufnr)

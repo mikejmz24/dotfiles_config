@@ -24,13 +24,84 @@ vim.api.nvim_create_user_command("DebugSqlSetup", function()
 	end
 end, {})
 
-vim.api.nvim_create_user_command("SqlFluffTest", function()
-	local file = vim.fn.expand("%:p")
-	local cmd = string.format("sqlfluff format --dialect mysql %s", file)
+vim.api.nvim_create_user_command("SqlFluffFormat", function()
+	-- Store cursor position
+	local cursor_pos = vim.api.nvim_win_get_cursor(0)
 
-	print("Running command: " .. cmd)
-	local result = vim.fn.system(cmd)
-	print(result)
+	-- Get current buffer content
+	local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+	local content = table.concat(lines, "\n")
+
+	-- Create temporary file with error handling
+	local tmp_file = vim.fn.tempname()
+	local f = io.open(tmp_file, "w")
+
+	if not f then
+		vim.notify("Failed to create temporary file", vim.log.levels.ERROR)
+		return
+	end
+
+	local success, write_err = pcall(function()
+		f:write(content)
+	end)
+
+	if not success then
+		vim.notify("Failed to write to temporary file: " .. tostring(write_err), vim.log.levels.ERROR)
+		f:close()
+		os.remove(tmp_file)
+		return
+	end
+
+	local close_success, close_err = pcall(function()
+		f:close()
+	end)
+
+	if not close_success then
+		vim.notify("Failed to close temporary file: " .. tostring(close_err), vim.log.levels.ERROR)
+		os.remove(tmp_file)
+		return
+	end
+
+	-- Run sqlfluff on temporary file
+	local cmd = string.format("sqlfluff format --dialect mysql %s", tmp_file)
+	vim.fn.system(cmd)
+
+	-- Read the formatted content back from the file
+	local formatted_file = io.open(tmp_file, "r")
+	if not formatted_file then
+		vim.notify("Failed to read formatted file", vim.log.levels.ERROR)
+		os.remove(tmp_file)
+		return
+	end
+
+	local formatted_content = formatted_file:read("*a")
+	formatted_file:close()
+
+	-- Remove temporary file
+	os.remove(tmp_file)
+
+	-- If we got content successfully
+	if formatted_content then
+		-- Convert formatted string back to lines
+		local new_lines = {}
+		for line in formatted_content:gmatch("[^\r\n]+") do
+			table.insert(new_lines, line)
+		end
+
+		-- Replace buffer content
+		vim.api.nvim_buf_set_lines(0, 0, -1, false, new_lines)
+
+		-- Restore cursor position with bounds checking
+		local new_line_count = #new_lines
+		if new_line_count > 0 then
+			cursor_pos[1] = math.min(cursor_pos[1], new_line_count)
+			local line_length = string.len(new_lines[cursor_pos[1]])
+			cursor_pos[2] = math.min(cursor_pos[2], line_length)
+			vim.api.nvim_win_set_cursor(0, cursor_pos)
+		end
+	else
+		vim.notify("SQLFluff formatting failed: no content returned", vim.log.levels.ERROR)
+	end
 end, {})
 
 vim.api.nvim_create_user_command("ConformDebug", function()
@@ -62,7 +133,7 @@ end, {})
 -- end
 -- vim.opt.rtp:prepend(lazypath)
 --
--- require("lazy").setup({ 
+-- require("lazy").setup({
 -- 'stevenart/conform.nvim',
 -- opts = {
 -- 	formatters = {

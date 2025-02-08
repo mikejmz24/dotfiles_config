@@ -1,27 +1,23 @@
 [sqlfluff]
 dialect = mysql
-templater = jinja
-runaway_limit = 10
 max_line_length = 120
-indent_unit = space
+sql_file_exts = .sql
+output_line_length = 120
 
-[sqlfluff:rules]
+[sqlfluff:indentation]
 tab_space_size = 4
 indent_unit = space
 
-# Capitalize all keywords (SELECT, FROM, WHERE)
-[sqlfluff:rules:L010]
+[sqlfluff:layout:type:comma]
+line_position = leading
+
+[sqlfluff:rules]
+allow_scalar = True
+single_table_references = consistent
+unquoted_identifiers_policy = all
+
+[sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = upper
 
-# Capitalize function names (COUNT, SUM)
-[sqlfluff:rules:L014]
+[sqlfluff:rules:capitalisation.identifiers]
 extended_capitalisation_policy = upper
-
-# Capitalize column/table aliases (e.g., "name AS USERNAME")
-[sqlfluff:rules:L029]
-capitalisation_policy = upper
-ignore_words = None
-
-# Capitalize data types (e.g., VARCHAR, INT)
-[sqlfluff:rules:L040]
-capitalisation_policy = upper

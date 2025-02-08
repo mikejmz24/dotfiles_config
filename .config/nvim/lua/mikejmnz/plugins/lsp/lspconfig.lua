@@ -233,29 +233,34 @@ return {
 			cmd = { "templ", "lsp" },
 			filetypes = { "html", "templ" },
 		})
-		-- 	lspconfig["htmx-lsp"].setup({
-		-- 		capabilities = capabilities,
-		-- 		on_attach = on_attach,
-		-- 	})
-		-- lspconfig["sqls"].setup({
+		lspconfig["htmx-lsp"].setup({
+			capabilities = capabilities,
+			on_attach = on_attach,
+		})
+		lspconfig["sqls"].setup({
+			capabilities = capabilities,
+			on_attach = function(client, bufnr)
+				client.server_capabilities.documentFormattingProvider = false -- Disable sqls' formatter
+				client.server_capabilities.documentRangeFormattingProvider = false
+				on_attach(client, bufnr) -- Your existing on_attach logic
+			end,
+			cmd = { "sqls", "up", "--method", "stdio" },
+			filetypes = { "sql", "mysql", "postgresql" },
+			root_dir = function(fname)
+				local util = require("lspconfig.util")
+				return util.root_pattern(".git")(fname)
+					or util.root_pattern("init.sql", "schema.sql")(fname)
+					or vim.fn.getcwd()
+			end,
+			settings = {
+				sqls = {
+					format = false, -- Important: Keep this false
+				},
+			},
+		})
+		-- lspconfig["sqlls"].setup({
 		-- 	capabilities = capabilities,
-		-- 	on_attach = function(client, bufnr)
-		-- 		client.server_capabilities.documentFormattingProvider = false -- Disable sqls' formatter
-		-- 		on_attach(client, bufnr) -- Your existing on_attach logic
-		-- 	end,
-		-- 	cmd = { "sqls", "up", "--method", "stdio" },
-		-- 	filetypes = { "sql", "mysql", "postgresql" },
-		-- 	root_dir = function(fname)
-		-- 		local util = require("lspconfig.util")
-		-- 		return util.root_pattern(".git")(fname)
-		-- 			or util.root_pattern("init.sql", "schema.sql")(fname)
-		-- 			or vim.fn.getcwd()
-		-- 	end,
-		-- 	settings = {
-		-- 		sqls = {
-		-- 			format = false, -- Important: Keep this false
-		-- 		},
-		-- 	},
+		-- 	on_attach = on_attach,
 		-- })
 	end,
 }

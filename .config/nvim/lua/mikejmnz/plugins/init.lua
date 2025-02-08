@@ -12,7 +12,6 @@ return {
 
 	-- Add your other plugins that have configuration files
 	require("mikejmnz.plugins.colorscheme"),
-	require("mikejmnz.plugins.conform"),
 	require("mikejmnz.plugins.comment"),
 	require("mikejmnz.plugins.formatting"),
 	require("mikejmnz.plugins.linting"),
