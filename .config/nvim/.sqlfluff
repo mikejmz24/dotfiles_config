@@ -1,6 +1,6 @@
 [sqlfluff]
 dialect = mysql
-max_line_length = 120
+max_line_length = 300
 sql_file_exts = .sql
 output_line_length = 120
 
@@ -20,4 +20,28 @@ unquoted_identifiers_policy = all
 capitalisation_policy = upper
 
 [sqlfluff:rules:capitalisation.identifiers]
-extended_capitalisation_policy = upper
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:layout.line_length]
+max_line_length = 300
+ignore = ["CP01"]
+
+[sqlfluff:rules:layout.select_targets]
+new_line_for_multiple = True
+
+[sqlfluff:rules:layout.keyword_newline]
+where_clause = inline
+group_by_clause = inline
+having_clause = inline
+order_by_clause = inline
+limit_clause = inline
+
+[sqlfluff:rules:layout.indent]
+level_indent = space
+
+# Add these for more robust error handling:
+[sqlfluff:rules:convention.001]  
+enabled = False  
+
+[sqlfluff:rules:convention.002]  
+enabled = False  

@@ -7,38 +7,23 @@ return {
 
     conform.setup({
       notify_on_error = true,
-      -- root_dir = function(bufnr)
-      -- 	return "/Users/miguel.jimenez2/.dotfiles/.config/nvim" -- Or a suitable parent directory
-      -- end,
       formatters = {
-        -- sqlfluff = {
-        -- 	command = "/Users/miguel.jimenez2/.local/share/nvim/mason/bin/sqlfluff",
-        -- 	args = function()
-        -- 		return { "format", "--dialect", "mysql" }
-        -- 	end, -- args as a function
-        -- 	stdin = true,
-        -- 	prepend_args = true,
-        -- 	cwd = function()
-        -- 		local cwd = vim.fn.getcwd()
-        -- 		return cwd
-        -- 	end,
-        -- },
         sqlfluff = {
-          command = "/Users/miguel.jimenez2/.local/share/nvim/mason/bin/sqlfluff",
+          -- command = "/Users/miguel.jimenez2/.local/share/nvim/mason/bin/sqlfluff",
+          command = "sqlfluff",
           args = {
-            "format",
-            "--dialect",
-            "mysql",
+            "fix",
+            "--rules",
+            "all",
             "--config",
             "/Users/miguel.jimenez2/.dotfiles/.config/nvim/.sqlfluff", -- Explicitly set the config path
-            "--nocolor",
             "-",
           },
           stdin = true,
-          timeout_ms = 5000,
-          cwd = function()
+          cwd = function(args)
             return vim.fn.getcwd()
           end,
+          exit_codes = { 0, 1 },
         },
         -- stylua = {
         -- 	command = "stylua",
@@ -81,11 +66,24 @@ return {
         timeout_ms = 20000,
       },
       -- Remove async from format_on_save
-      format_on_save = {
-        lsp_fallback = true,
-        timeout_ms = 20000,
-        quiet = true,
-      },
+      -- format_on_save = {
+      --   lsp_fallback = true,
+      --   timeout_ms = 20000,
+      --   -- quiet = true,
+      -- },
+
+      format_on_save = function(bufnr)
+        if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+          return
+        end
+
+        vim.cmd("write") -- Ensure buffer is saved before formatting
+
+        return {
+          timeout_ms = 20000,
+          lsp_fallback = true,
+        }
+      end,
       -- Add this callback to handle the format result
       callback = function(err)
         if err then

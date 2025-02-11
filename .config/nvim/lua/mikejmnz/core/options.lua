@@ -13,7 +13,7 @@ opt.autoindent = true
 opt.wrap = false
 
 -- search settings
--- opt.ignorecase = true
+opt.ignorecase = true
 opt.smartcase = true
 
 -- cursor line
