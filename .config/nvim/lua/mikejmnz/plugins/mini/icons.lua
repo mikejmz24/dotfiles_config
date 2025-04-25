@@ -2023,22 +2023,28 @@ H.os_icons = {
 -- Helper functionality =======================================================
 -- Settings -------------------------------------------------------------------
 H.setup_config = function(config)
-	-- General idea: if some table elements are not present in user-supplied
-	-- `config`, take them from default config
-	vim.validate({ config = { config, "table", true } })
+	if config ~= nil and type(config) ~= "table" then
+		error("Expected config to be a table or nil")
+	end
 	config = vim.tbl_deep_extend("force", vim.deepcopy(H.default_config), config or {})
 
-	vim.validate({
-		style = { config.style, "string" },
-		default = { config.default, "table" },
-		directory = { config.directory, "table" },
-		extension = { config.extension, "table" },
-		file = { config.file, "table" },
-		filetype = { config.filetype, "table" },
-		lsp = { config.lsp, "table" },
-		os = { config.os, "table" },
-		use_file_extension = { config.use_file_extension, "function" },
-	})
+	local validations = {
+		{ name = "style", value = config.style, expected = "string" },
+		{ name = "default", value = config.default, expected = "table" },
+		{ name = "directory", value = config.directory, expected = "table" },
+		{ name = "extension", value = config.extension, expected = "table" },
+		{ name = "file", value = config.file, expected = "table" },
+		{ name = "filetype", value = config.filetype, expected = "table" },
+		{ name = "lsp", value = config.lsp, expected = "table" },
+		{ name = "os", value = config.os, expected = "table" },
+		{ name = "use_file_extension", value = config.use_file_extension, expected = "function" },
+	}
+
+	for _, v in ipairs(validations) do
+		if type(v.value) ~= v.expected then
+			error(string.format("Expected %s to be %s, got %s", v.name, v.expected, type(v.value)))
+		end
+	end
 
 	return config
 end

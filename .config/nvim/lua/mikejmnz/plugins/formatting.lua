@@ -25,11 +25,11 @@ return {
           end,
           exit_codes = { 0, 1 },
         },
-        -- stylua = {
-        -- 	command = "stylua",
-        -- 	args = { "-" },
-        -- 	stdin = true,
-        -- },
+        stylua = {
+          command = "stylua",
+          args = { "-" },
+          stdin = true,
+        },
         -- black = {
         -- 	command = "black",
         -- 	args = { "--quiet", "-" },
@@ -38,11 +38,11 @@ return {
         -- -- ... other formatters as needed ...
       },
       formatters_by_ft = {
-        -- markdown = { "prettier" },
-        -- html = { "prettier" },
-        -- css = { "prettier" },
-        -- json = { "jq" },
-        -- lua = { "stylua" },
+        markdown = { "prettier" },
+        html = { "prettier" },
+        css = { "prettier" },
+        json = { "jq" },
+        lua = { "stylua" },
         sql = { "sqlfluff" },        -- ONLY sqlfluff for SQL files
         mysql = { "sqlfluff" },      -- ONLY sqlfluff for MySQL files
         postgresql = { "sqlfluff" }, -- ONLY sqlfluff for PostgreSQL files
