@@ -15,7 +15,8 @@ return {
 		local keymap = vim.keymap -- for conciseness
 
 		local opts = { noremap = true, silent = true }
-		local on_attach = function(_client, bufnr)
+
+		local on_attach = function(client, bufnr)
 			opts.buffer = bufnr
 
 			-- set keybinds
@@ -46,11 +47,21 @@ return {
 			opts.desc = "Show line diagnostics"
 			keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts) -- show diagnostics for line
 
+			-- opts.desc = "Go to previous diagnostic"
+			-- keymap.set("n", "[d", vim.diagnostic.goto_prev, opts) -- jump to previous diagnostic in buffer
+			--
+			-- opts.desc = "Go to next diagnostic"
+			-- keymap.set("n", "]d", vim.diagnostic.goto_next, opts) -- jump to next diagnostic in buffer
+
 			opts.desc = "Go to previous diagnostic"
-			keymap.set("n", "[d", vim.diagnostic.goto_prev, opts) -- jump to previous diagnostic in buffer
+			keymap.set("n", "[d", function()
+				vim.diagnostic.jump({ count = -1 })
+			end, opts)
 
 			opts.desc = "Go to next diagnostic"
-			keymap.set("n", "]d", vim.diagnostic.goto_next, opts) -- jump to next diagnostic in buffer
+			keymap.set("n", "]d", function()
+				vim.diagnostic.jump({ count = 1 })
+			end, opts)
 
 			opts.desc = "Show documentation for what is under cursor"
 			keymap.set("n", "K", vim.lsp.buf.hover, opts) -- show documentation for what is under cursor
@@ -61,20 +72,75 @@ return {
 
 		-- used to enable autocompletion (assign to every lsp server config)
 		local capabilities = cmp_nvim_lsp.default_capabilities()
+		-- Configure diagnostics globally (this ensures they work for all buffers)
+		vim.diagnostic.config({
+			virtual_text = true,
+			signs = true,
+			underline = true,
+			update_in_insert = false,
+			severity_sort = true,
+			float = {
+				border = "rounded",
+				source = true,
+				header = "",
+				prefix = "",
+			},
+		})
 
 		-- Change the Diagnostic symbols in the sign column (gutter)
 		-- (not in youtube nvim video)
 		local signs = { Error = " ", Warn = " ", Hint = "󰠠 ", Info = " " }
-		vim.diagnostic.config({
-			signs = {
-				text = {
-					[vim.diagnostic.severity.ERROR] = signs.Error,
-					[vim.diagnostic.severity.WARN] = signs.Warn,
-					[vim.diagnostic.severity.HINT] = signs.Hint,
-					[vim.diagnostic.severity.INFO] = signs.Info,
-				},
-			},
+		for type, icon in pairs(signs) do
+			local hl = "DiagnosticSign" .. type
+			vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
+		end
+
+		-- Add autocommands for better LSP attachment debugging
+		vim.api.nvim_create_autocmd("LspAttach", {
+			callback = function(ev)
+				local client = vim.lsp.get_client_by_id(ev.data.client_id)
+				if client then
+					print(
+						string.format(
+							"LSP %s successfully attached to buffer %d (filetype: %s)",
+							client.name,
+							ev.buf,
+							vim.bo[ev.buf].filetype
+						)
+					)
+				else
+					print(
+						string.format(
+							"LSP client (id: %d) attached to buffer %d but client details unavailable",
+							ev.data.client_id,
+							ev.buf
+						)
+					)
+				end
+			end,
 		})
+
+		vim.api.nvim_create_autocmd("LspDetach", {
+			callback = function(ev)
+				local client = vim.lsp.get_client_by_id(ev.data.client_id)
+				if client then
+					print(string.format("LSP %s detached from buffer %d", client.name, ev.buf))
+				else
+					print(string.format("LSP client (id: %d) detached from buffer %d", ev.data.client_id, ev.buf))
+				end
+			end,
+		})
+		-- vim.diagnostic.config({
+		-- 	signs = {
+		-- 		text = {
+		-- 			[vim.diagnostic.severity.ERROR] = signs.Error,
+		-- 			[vim.diagnostic.severity.WARN] = signs.Warn,
+		-- 			[vim.diagnostic.severity.HINT] = signs.Hint,
+		-- 			[vim.diagnostic.severity.INFO] = signs.Info,
+		-- 		},
+		-- 	},
+		-- })
+		--
 		-- for type, icon in pairs(signs) do
 		-- 	local hl = "DiagnosticSign" .. type
 		-- 	vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
@@ -310,9 +376,37 @@ return {
 				end,
 			},
 		})
-		-- lspconfig["sqlls"].setup({
-		-- 	capabilities = capabilities,
-		-- 	on_attach = on_attach,
-		-- })
+
+		-- Add command to check LSP status
+		vim.api.nvim_create_user_command("LspStatus", function()
+			local clients = vim.lsp.get_clients()
+			if #clients == 0 then
+				print("No active LSP clients")
+			else
+				for _, client in ipairs(clients) do
+					local buffers = {}
+					for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+						if vim.lsp.buf_is_attached(buf, client.id) then
+							table.insert(buffers, buf)
+						end
+					end
+					print(
+						string.format(
+							"LSP %s (id: %d) attached to buffers: %s",
+							client.name,
+							client.id,
+							table.concat(buffers, ", ")
+						)
+					)
+				end
+			end
+		end, {})
+
+		-- Ensure diagnostics are enabled for all buffers
+		vim.api.nvim_create_autocmd("BufEnter", {
+			callback = function()
+				vim.diagnostic.enable()
+			end,
+		})
 	end,
 }

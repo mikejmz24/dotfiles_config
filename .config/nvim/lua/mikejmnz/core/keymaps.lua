@@ -17,3 +17,15 @@ keymap.set("n", "<C-l>", "<C-W><", { desc = "Adjust split window size to the lef
 keymap.set("n", "<C-h>", "<C-W>>", { desc = "Adjust split window to the right" })
 keymap.set("n", "<C-k>", "<C-W>+", { desc = "Adjust split window size up" })
 keymap.set("n", "<C-j>", "<C-W>-", { desc = "Adjust split window size down" })
+
+-- Global diagnostic keymaps (work regardless of LSP attachment)
+keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show diagnostic error messages" })
+keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic quickfix list" })
+
+-- Alternative diagnostic navigation (in case the LSP ones don't work)
+keymap.set("n", "[d", function()
+	vim.diagnostic.jump({ count = -1 })
+end, { desc = "Go to previous diagnostic" })
+keymap.set("n", "]d", function()
+	vim.diagnostic.jump({ count = 1 })
+end, { desc = "Go to next diagnostic" })
