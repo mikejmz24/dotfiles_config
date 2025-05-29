@@ -52,14 +52,14 @@ keymap.set("n", "]d", function()
 	end
 end, { desc = "Go to next diagnostic" })
 
--- Quick diagnostic refresh
-keymap.set("n", "<leader>dR", function()
-	vim.diagnostic.reset()
-	vim.defer_fn(function()
-		vim.diagnostic.enable()
-		print("Diagnostics refreshed")
-	end, 100)
-end, { desc = "Refresh diagnostics" })
+-- -- Quick diagnostic refresh
+-- keymap.set("n", "<leader>dR", function()
+-- 	vim.diagnostic.reset()
+-- 	vim.defer_fn(function()
+-- 		vim.diagnostic.enable()
+-- 		print("Diagnostics refreshed")
+-- 	end, 100)
+-- end, { desc = "Refresh diagnostics" })
 
 -- Better LSP restart
 keymap.set("n", "<leader>lR", function()

@@ -129,59 +129,12 @@ return {
 		-- ELEGANT SOLUTION: Automatically prevent duplicate LSP clients
 		-- ===================================================================
 
-		-- Function to automatically kill existing duplicates with better timing
-		local function auto_kill_duplicate_clients()
-			-- Run multiple times to catch LSPs that start at different times
-			local function kill_duplicates()
-				local all_clients = vim.lsp.get_clients()
-				local by_name_and_root = {}
-				local killed = 0
-
-				-- Group clients by name and root directory
-				for _, client in ipairs(all_clients) do
-					local key = string.format("%s:%s", client.name, client.config.root_dir or "none")
-					by_name_and_root[key] = by_name_and_root[key] or {}
-					table.insert(by_name_and_root[key], client)
-				end
-
-				-- Kill duplicates (keep the first one)
-				for key, clients in pairs(by_name_and_root) do
-					if #clients > 1 then
-						print(string.format("🔧 Auto-killing %d duplicate %s clients", #clients - 1, clients[1].name))
-						-- Keep the first client, kill the rest
-						for i = 2, #clients do
-							local client = clients[i]
-							vim.lsp.stop_client(client.id, true)
-							killed = killed + 1
-						end
-					end
-				end
-
-				return killed
-			end
-
-			-- Check multiple times as LSPs might start at different intervals
-			vim.defer_fn(function()
-				local killed1 = kill_duplicates()
-				if killed1 > 0 then
-					print(string.format("✅ Auto-cleaned %d duplicate LSP clients (first pass)", killed1))
-				end
-
-				-- Second pass after more time
-				vim.defer_fn(function()
-					local killed2 = kill_duplicates()
-					if killed2 > 0 then
-						print(string.format("✅ Auto-cleaned %d duplicate LSP clients (second pass)", killed2))
-					end
-				end, 3000)
-			end, 1000)
-		end
-
 		-- Enhanced function to prevent duplicate LSP clients at attach time
 		local function prevent_duplicate_lsp_clients()
 			print("🔧 Enabling LSP duplicate prevention...")
 
 			local active_clients_by_key = {}
+			local seen_client_ids = {} -- Track which client IDs we've already processed
 
 			-- Hook into LspAttach event to catch duplicates as they attach
 			vim.api.nvim_create_autocmd("LspAttach", {
@@ -193,7 +146,16 @@ return {
 
 					local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
 
-					-- Check if we already have this client type + root combination
+					-- If we've already seen this exact client ID, it's just attaching to another buffer
+					-- This is normal behavior, not a duplicate
+					if seen_client_ids[client.id] then
+						return -- Silent - no need to log normal buffer attachments
+					end
+
+					-- Mark this client ID as seen
+					seen_client_ids[client.id] = true
+
+					-- Check if we already have a DIFFERENT client with this name + root combination
 					if active_clients_by_key[client_key] then
 						local existing_client_id = active_clients_by_key[client_key]
 						local existing_client = vim.lsp.get_client_by_id(existing_client_id)
@@ -216,7 +178,7 @@ return {
 
 					-- This is the first/primary client for this key
 					active_clients_by_key[client_key] = client.id
-					print(string.format("✅ Accepted %s client (ID: %d) as primary", client.name, client.id))
+					print(string.format("✅ Registered %s client (ID: %d) as primary", client.name, client.id))
 				end,
 			})
 
@@ -228,6 +190,7 @@ return {
 						local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
 						if active_clients_by_key[client_key] == args.data.client_id then
 							active_clients_by_key[client_key] = nil
+							seen_client_ids[args.data.client_id] = nil
 							print(
 								string.format(
 									"🧹 Cleaned up tracking for %s client (ID: %d)",
@@ -240,41 +203,8 @@ return {
 				end,
 			})
 		end
-
-		-- Monitor LSP attach events to see what's happening
-		vim.api.nvim_create_autocmd("LspAttach", {
-			callback = function(args)
-				local client = vim.lsp.get_client_by_id(args.data.client_id)
-				if client then
-					print(
-						string.format("📎 LSP ATTACHED: %s (ID: %d) to buffer %d", client.name, client.id, args.buf)
-					)
-
-					-- Check for duplicates immediately
-					local same_name_clients = {}
-					for _, c in ipairs(vim.lsp.get_clients({ bufnr = args.buf })) do
-						if c.name == client.name then
-							table.insert(same_name_clients, c)
-						end
-					end
-
-					if #same_name_clients > 1 then
-						print(
-							string.format(
-								"⚠️  DUPLICATE DETECTED: %d %s clients on buffer %d!",
-								#same_name_clients,
-								client.name,
-								args.buf
-							)
-						)
-					end
-				end
-			end,
-		})
-
 		-- Enable automatic duplicate prevention and cleanup
 		prevent_duplicate_lsp_clients()
-		auto_kill_duplicate_clients()
 
 		-- ===================================================================
 		-- LSP SERVER CONFIGURATIONS
@@ -460,10 +390,5 @@ return {
 				end
 			end
 		end, { desc = "Show LSP status" })
-
-		vim.api.nvim_create_user_command("DiagnosticRefresh", function()
-			vim.diagnostic.reset()
-			print("Diagnostics reset - they will be regenerated automatically")
-		end, { desc = "Reset diagnostics" })
 	end,
 }
