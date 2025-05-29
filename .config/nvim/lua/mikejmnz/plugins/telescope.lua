@@ -34,7 +34,6 @@ return {
 					prompt_position = "bottom",
 					horizontal = {
 						preview_width = 0.45,
-						-- results_width = 0.5,
 					},
 					vertical = {
 						mirror = false,
@@ -102,7 +101,6 @@ return {
 					sort_mru = true,
 					ignore_current_buffer = false,
 				},
-				-- Minimal diagnostic configuration to avoid deprecation issues
 				diagnostics = {},
 				lsp_references = {},
 				lsp_definitions = {},
@@ -135,13 +133,6 @@ return {
 		-- Buffer operations
 		keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Show open buffers" })
 
-		-- Diagnostic operations (simplified to avoid deprecation warnings)
-		keymap.set("n", "<leader>fd", function()
-			builtin.diagnostics({ bufnr = 0 })
-		end, { desc = "Show buffer diagnostics" })
-
-		keymap.set("n", "<leader>fD", builtin.diagnostics, { desc = "Show all workspace diagnostics" })
-
 		-- LSP operations
 		keymap.set("n", "<leader>ft", builtin.lsp_document_symbols, { desc = "Show document symbols" })
 		keymap.set("n", "<leader>fT", builtin.lsp_workspace_symbols, { desc = "Show workspace symbols" })
@@ -149,5 +140,147 @@ return {
 		-- Git operations
 		keymap.set("n", "<leader>fg", builtin.git_files, { desc = "Find git files" })
 		keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "Show help tags" })
+
+		-- =================================================================
+		-- ROBUST DUPLICATE PREVENTION
+		-- =================================================================
+
+		-- Function to deduplicate diagnostics by creating a custom namespace
+		local function get_deduped_diagnostics(bufnr)
+			bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+			-- Get all diagnostics from all namespaces
+			local all_diagnostics = vim.diagnostic.get(bufnr)
+
+			-- Filter out duplicates
+			local unique_diagnostics = {}
+			local seen = {}
+
+			for _, diagnostic in ipairs(all_diagnostics) do
+				-- Create a unique key for each diagnostic
+				local key = string.format(
+					"%d:%d:%s:%d",
+					diagnostic.lnum,
+					diagnostic.col,
+					diagnostic.message:gsub("%s+", " "), -- normalize whitespace
+					diagnostic.severity
+				)
+
+				if not seen[key] then
+					seen[key] = true
+					table.insert(unique_diagnostics, diagnostic)
+				end
+			end
+
+			return unique_diagnostics
+		end
+
+		-- Create custom namespace for clean diagnostics
+		local clean_ns = vim.api.nvim_create_namespace("telescope_clean_diagnostics")
+
+		-- Function to set clean diagnostics temporarily
+		local function set_clean_diagnostics(bufnr)
+			bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+			-- Get unique diagnostics
+			local unique_diagnostics = get_deduped_diagnostics(bufnr)
+
+			-- Clear our clean namespace
+			vim.diagnostic.reset(clean_ns, bufnr)
+
+			-- Set unique diagnostics in our namespace
+			vim.diagnostic.set(clean_ns, bufnr, unique_diagnostics)
+
+			return unique_diagnostics
+		end
+
+		-- =================================================================
+		-- MAIN DIAGNOSTIC KEYMAPS - ROBUST VERSION
+		-- =================================================================
+
+		-- Buffer diagnostics - actually removes duplicates
+		keymap.set("n", "<leader>fd", function()
+			local buf = vim.api.nvim_get_current_buf()
+
+			-- Set clean diagnostics and get count
+			local unique_diagnostics = set_clean_diagnostics(buf)
+
+			-- Override vim.diagnostic.get ONLY for telescope call
+			local original_get = vim.diagnostic.get
+			local telescope_active = true
+
+			vim.diagnostic.get = function(query_buf, opts)
+				-- Only override when telescope is active and querying our buffer
+				if telescope_active and (query_buf == buf or query_buf == nil) then
+					return unique_diagnostics
+				end
+				return original_get(query_buf, opts)
+			end
+
+			-- Show diagnostics in telescope
+			builtin.diagnostics({
+				bufnr = buf,
+				severity_limit = vim.diagnostic.severity.HINT,
+			})
+
+			-- Restore original function after telescope finishes
+			vim.defer_fn(function()
+				telescope_active = false
+				vim.diagnostic.get = original_get
+				-- Clean up our temporary namespace
+				vim.diagnostic.reset(clean_ns, buf)
+			end, 2000)
+
+			print(string.format("Showing %d unique diagnostics (duplicates filtered)", #unique_diagnostics))
+		end, { desc = "Show buffer diagnostics (duplicates removed)" })
+
+		-- Manual duplicate cleanup command
+		keymap.set("n", "<leader>dd", function()
+			local buf = vim.api.nvim_get_current_buf()
+			local original_count = #vim.diagnostic.get(buf)
+
+			-- Get unique diagnostics
+			local unique_diagnostics = get_deduped_diagnostics(buf)
+
+			-- Clear ALL diagnostics from buffer
+			vim.diagnostic.reset(nil, buf)
+
+			-- Wait a moment, then set only unique ones
+			vim.defer_fn(function()
+				if #unique_diagnostics > 0 then
+					-- Set them back using the first available namespace
+					local clients = vim.lsp.get_clients({ bufnr = buf })
+					if #clients > 0 then
+						local ns = vim.lsp.diagnostic.get_namespace(clients[1].id)
+						vim.diagnostic.set(ns, buf, unique_diagnostics)
+					end
+				end
+
+				print(string.format("Removed duplicates: %d → %d diagnostics", original_count, #unique_diagnostics))
+			end, 100)
+		end, { desc = "Remove duplicate diagnostics" })
+
+		-- =================================================================
+		-- UTILITY COMMANDS (SIMPLIFIED)
+		-- =================================================================
+
+		-- Copy current line diagnostic to clipboard
+		keymap.set("n", "<leader>dy", function()
+			local line = vim.fn.line(".") - 1
+			local diagnostics = vim.diagnostic.get(0, { lnum = line })
+			if #diagnostics > 0 then
+				local text = diagnostics[1].message
+				vim.fn.setreg("+", text)
+				print("Diagnostic copied: " .. text:sub(1, 50) .. (text:len() > 50 and "..." or ""))
+			else
+				print("No diagnostic on current line")
+			end
+		end, { desc = "Copy line diagnostic to clipboard" })
+
+		-- Clear all diagnostics (emergency)
+		keymap.set("n", "<leader>dC", function()
+			vim.diagnostic.reset()
+			print("All diagnostics cleared")
+		end, { desc = "Clear all diagnostics" })
 	end,
 }

@@ -531,29 +531,55 @@ return {
 			vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
 		end
 
-		-- Simplified autocommands without diagnostic.enable() calls
-		local lsp_group = vim.api.nvim_create_augroup("LspDiagnostics", { clear = true })
+		local lsp_group = vim.api.nvim_create_augroup("LspDiagnosticsMinimal", { clear = true })
 
+		-- Basic LSP attach notification
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = lsp_group,
 			callback = function(ev)
 				local client = vim.lsp.get_client_by_id(ev.data.client_id)
-				if client and type(client) == "table" then
-					local client_name = tostring(client.name or "unknown")
-					local filetype = vim.bo[ev.buf].filetype or "unknown"
-
-					print(
-						string.format(
-							"LSP %s successfully attached to buffer %d (filetype: %s)",
-							client_name,
-							ev.buf,
-							filetype
-						)
-					)
+				if client then
+					print(string.format("LSP %s attached to buffer %d", client.name, ev.buf))
 				end
 			end,
 		})
 
+		-- Clear diagnostics on buffer delete
+		vim.api.nvim_create_autocmd("BufDelete", {
+			group = lsp_group,
+			callback = function(ev)
+				if vim.api.nvim_buf_is_valid(ev.buf) then
+					vim.diagnostic.reset(nil, ev.buf)
+				end
+			end,
+		})
+
+		-- Simple paste/text change handling - just clear duplicates
+		vim.api.nvim_create_autocmd("TextChanged", {
+			group = lsp_group,
+			callback = function(ev)
+				-- Clear diagnostics immediately on large text changes (like paste)
+				local buf = ev.buf
+				local line_count = vim.api.nvim_buf_line_count(buf)
+
+				-- If buffer has many lines, assume it might be a paste operation
+				if line_count > 50 then
+					vim.diagnostic.reset(nil, buf)
+				end
+			end,
+		})
+
+		-- Clear diagnostics when entering a buffer to prevent accumulation
+		vim.api.nvim_create_autocmd("BufEnter", {
+			group = lsp_group,
+			callback = function(ev)
+				-- Only clear if there are duplicate-looking diagnostics
+				local diagnostics = vim.diagnostic.get(ev.buf)
+				if #diagnostics > 20 then -- Arbitrary threshold for "too many diagnostics"
+					vim.diagnostic.reset(nil, ev.buf)
+				end
+			end,
+		})
 		vim.api.nvim_create_autocmd("LspDetach", {
 			group = lsp_group,
 			callback = function(ev)
@@ -686,5 +712,97 @@ return {
 			vim.diagnostic.reset()
 			print("Diagnostics reset - they will be regenerated automatically")
 		end, { desc = "Reset diagnostics" })
+		-- Add this to your LSP configuration to prevent duplicates at the source
+		-- This prevents LSP servers from accumulating duplicate diagnostics
+
+		local duplicate_prevention = vim.api.nvim_create_augroup("DiagnosticDuplicatePrevention", { clear = true })
+
+		-- Track diagnostics per buffer to detect duplicates
+		local diagnostic_cache = {}
+
+		-- Function to detect and remove duplicates when diagnostics are set
+		local function prevent_duplicate_diagnostics(bufnr)
+			if not vim.api.nvim_buf_is_valid(bufnr) then
+				return
+			end
+
+			local current_diagnostics = vim.diagnostic.get(bufnr)
+			local buffer_key = tostring(bufnr)
+
+			-- Check if we have duplicates by comparing with cache
+			if diagnostic_cache[buffer_key] then
+				local cached_count = #diagnostic_cache[buffer_key]
+				local current_count = #current_diagnostics
+
+				-- If current count is more than 1.5x cached, likely duplicates
+				if current_count > cached_count * 1.5 and current_count >= 6 then
+					-- Remove duplicates
+					local unique_diagnostics = {}
+					local seen = {}
+
+					for _, diagnostic in ipairs(current_diagnostics) do
+						local key = string.format(
+							"%d:%d:%s:%d",
+							diagnostic.lnum,
+							diagnostic.col,
+							diagnostic.message,
+							diagnostic.severity
+						)
+
+						if not seen[key] then
+							seen[key] = true
+							table.insert(unique_diagnostics, diagnostic)
+						end
+					end
+
+					-- If we found duplicates, reset and set unique ones
+					if #unique_diagnostics < current_count then
+						vim.diagnostic.reset(nil, bufnr)
+
+						-- Set unique diagnostics back
+						vim.defer_fn(function()
+							if vim.api.nvim_buf_is_valid(bufnr) and #unique_diagnostics > 0 then
+								-- Use the first LSP client's namespace
+								local clients = vim.lsp.get_clients({ bufnr = bufnr })
+								if #clients > 0 then
+									local ns = vim.lsp.diagnostic.get_namespace(clients[1].id)
+									vim.diagnostic.set(ns, bufnr, unique_diagnostics)
+								end
+							end
+						end, 50)
+
+						print(string.format("Auto-removed duplicates: %d → %d", current_count, #unique_diagnostics))
+					end
+				end
+			end
+
+			-- Update cache
+			diagnostic_cache[buffer_key] = current_diagnostics
+		end
+
+		-- Monitor diagnostic changes
+		vim.api.nvim_create_autocmd("DiagnosticChanged", {
+			group = duplicate_prevention,
+			callback = function(ev)
+				-- Small delay to let all diagnostics settle
+				vim.defer_fn(function()
+					prevent_duplicate_diagnostics(ev.buf)
+				end, 100)
+			end,
+		})
+
+		-- Clean up cache when buffer is deleted
+		vim.api.nvim_create_autocmd("BufDelete", {
+			group = duplicate_prevention,
+			callback = function(ev)
+				diagnostic_cache[tostring(ev.buf)] = nil
+			end,
+		})
+
+		-- Manual command to force duplicate cleanup
+		vim.api.nvim_create_user_command("FixDuplicateDiagnostics", function()
+			local buf = vim.api.nvim_get_current_buf()
+			prevent_duplicate_diagnostics(buf)
+		end, { desc = "Fix duplicate diagnostics in current buffer" })
 	end,
 }
