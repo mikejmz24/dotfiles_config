@@ -99,7 +99,7 @@ return {
 				source = true,
 				header = "",
 				prefix = "",
-				focusable = false,
+				focusable = true,
 			},
 		})
 

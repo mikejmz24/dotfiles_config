@@ -151,9 +151,9 @@ return {
 		-- =================================================================
 
 		-- Function to normalize diagnostic message (remove extra whitespace, etc.)
-		local function normalize_message(message)
-			return message:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
-		end
+		-- local function normalize_message(message)
+		-- 	return message:gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
+		-- end
 
 		-- Clean diagnostic deduplication (debug removed)
 		local function deduplicate_diagnostics(diagnostics)
@@ -254,22 +254,5 @@ return {
 		keymap.set("n", "<leader>fD", function()
 			show_clean_diagnostics({})
 		end, { desc = "Show workspace diagnostics (clean)" })
-
-		-- =================================================================
-		-- UTILITY DIAGNOSTIC COMMANDS
-		-- =================================================================
-
-		-- -- Copy current line diagnostic to clipboard
-		-- keymap.set("n", "<leader>dy", function()
-		-- 	local line = vim.fn.line(".") - 1
-		-- 	local diagnostics = vim.diagnostic.get(0, { lnum = line })
-		-- 	if #diagnostics > 0 then
-		-- 		local text = normalize_message(diagnostics[1].message)
-		-- 		vim.fn.setreg("+", text)
-		-- 		print("Diagnostic copied: " .. text:sub(1, 50) .. (text:len() > 50 and "..." or ""))
-		-- 	else
-		-- 		print("No diagnostic on current line")
-		-- 	end
-		-- end, { desc = "Copy line diagnostic to clipboard" })
 	end,
 }
