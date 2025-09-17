@@ -22,9 +22,7 @@ cursor-invert-fg-bg            = true
 cursor-opacity                 = 0.8
 link-url                       = true
 mouse-hide-while-typing        = true
-theme                          = ChallengerDeep
+theme                          = Challenger Deep
 background-opacity	           = 0.92
 window-vsync                   = true
 
-# Hide MacOSX title
-# macos-titlebar-style = hidden
