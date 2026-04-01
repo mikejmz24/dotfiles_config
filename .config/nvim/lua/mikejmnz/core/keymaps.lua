@@ -69,18 +69,13 @@ keymap.set("n", "<leader>lR", function()
 	end, 1000)
 end, { desc = "Restart LSP" })
 
--- Quick save and quit
-keymap.set("n", "<leader>w", ":w<CR>", { desc = "Save file" })
-keymap.set("n", "<leader>W", ":wa<CR>", { desc = "Save all files" })
-keymap.set("n", "<leader>Q", ":qa<CR>", { desc = "Quit all" })
-
 -- Better paste in visual mode (keeps register)
 keymap.set("v", "p", '"_dP', { desc = "Paste without yanking" })
 
 -- Move lines up/down in visual mode
-keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move selection down" })
 keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = "Move selection up" })
+keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move selection down" })
 
 -- Better indenting in visual mode
-keymap.set("v", "<", "<gv", { desc = "Indent left and reselect" })
 keymap.set("v", ">", ">gv", { desc = "Indent right and reselect" })
+keymap.set("v", "<", "<gv", { desc = "Indent left and reselect" })

@@ -6,7 +6,7 @@ return {
 		{ "antosha417/nvim-lsp-file-operations", config = true },
 	},
 	config = function()
-		local lspconfig = require("lspconfig")
+		-- local lspconfig = require("lspconfig")
 		local cmp_nvim_lsp = require("cmp_nvim_lsp")
 		local keymap = vim.keymap
 
@@ -259,11 +259,14 @@ return {
 				on_attach = on_attach,
 				cmd = { "sqls" },
 				filetypes = { "sql", "mysql", "postgresql" },
+				-- root_dir = function(fname)
+				-- 	local util = require("lspconfig.util")
+				-- 	return util.root_pattern(".git")(fname)
+				-- 		or util.root_pattern("init.sql", "schema.sql")(fname)
+				-- 		or vim.fn.getcwd()
+				-- end,
 				root_dir = function(fname)
-					local util = require("lspconfig.util")
-					return util.root_pattern(".git")(fname)
-						or util.root_pattern("init.sql", "schema.sql")(fname)
-						or vim.fn.getcwd()
+					return vim.fs.root(fname, { ".git", "init.sql", "schema.sql" }) or vim.fn.getcwd()
 				end,
 				settings = {
 					sqls = {
@@ -273,13 +276,35 @@ return {
 					},
 				},
 			},
+			["texlab"] = {
+				capabilities = capabilities,
+				on_attach = on_attach,
+				settings = {
+					texlab = {
+						build = {
+							executable = "latexmk",
+							args = { "-pdf", "-interaction=nonstopmode", "-synctex=1", "%f" },
+							onSave = true,
+						},
+						chktex = {
+							onOpenAndSave = true,
+							onEdit = false,
+						},
+						diagnosticsDelay = 300,
+					},
+				},
+			},
 		}
 
-		-- Setup all servers
+		-- -- Setup all servers
+		-- for server_name, config in pairs(servers) do
+		-- 	if lspconfig[server_name] then
+		-- 		lspconfig[server_name].setup(config)
+		-- 	end
+		-- end
 		for server_name, config in pairs(servers) do
-			if lspconfig[server_name] then
-				lspconfig[server_name].setup(config)
-			end
+			vim.lsp.config(server_name, config)
+			vim.lsp.enable(server_name)
 		end
 
 		-- ===================================================================
