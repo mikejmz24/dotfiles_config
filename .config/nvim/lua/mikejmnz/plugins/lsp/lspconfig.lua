@@ -217,6 +217,14 @@ return {
 				on_attach = on_attach,
 				settings = {
 					python = {
+						pythonPath = (function()
+							-- Look for .venv in the project root, fall back to system python
+							local venv = vim.fn.getcwd() .. "/.venv/bin/python"
+							if vim.fn.executable(venv) == 1 then
+								return venv
+							end
+							return vim.fn.exepath("python3") or vim.fn.exepath("python")
+						end)(),
 						analysis = {
 							autoSearchPaths = true,
 							extraPaths = { "~/Documents/localDocuments/" },

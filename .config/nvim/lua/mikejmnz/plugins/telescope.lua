@@ -1,6 +1,6 @@
 return {
 	"nvim-telescope/telescope.nvim",
-	tag = "0.1.8",
+	-- tag = "0.1.x",
 	dependencies = {
 		"nvim-lua/plenary.nvim",
 		{ "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
@@ -143,7 +143,13 @@ return {
 		keymap.set("n", "<leader>fT", builtin.lsp_workspace_symbols, { desc = "Show workspace symbols" })
 
 		-- Git operations
-		keymap.set("n", "<leader>fg", builtin.git_files, { desc = "Find git files" })
+		-- NEW
+		keymap.set("n", "<leader>fg", function()
+			local ok = pcall(builtin.git_files)
+			if not ok then
+				builtin.find_files()
+			end
+		end, { desc = "Find git files (fallback to all files)" })
 		keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "Show help tags" })
 
 		-- =================================================================

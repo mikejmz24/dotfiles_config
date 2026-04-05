@@ -37,6 +37,53 @@ keymap.set("n", "<leader>q", function()
 	vim.diagnostic.setloclist({ open = true })
 end, { desc = "Open diagnostic quickfix list" })
 
+-- Yank all diagnostics to clipboard
+keymap.set("n", "<leader>yd", function()
+	local diags = vim.diagnostic.get()
+
+	if #diags == 0 then
+		print("No diagnostics to copy")
+		return
+	end
+
+	-- Sort by severity (errors first)
+	table.sort(diags, function(a, b)
+		return a.severity < b.severity
+	end)
+
+	local severity_map = {
+		[vim.diagnostic.severity.ERROR] = "E",
+		[vim.diagnostic.severity.WARN] = "W",
+		[vim.diagnostic.severity.INFO] = "I",
+		[vim.diagnostic.severity.HINT] = "H",
+	}
+
+	local lines = vim.tbl_map(function(d)
+		local fname = vim.api.nvim_buf_get_name(d.bufnr)
+		if fname == "" then
+			fname = "[No Name]"
+		else
+			local cwd = vim.fn.getcwd()
+			local relative = fname:gsub("^" .. vim.pesc(cwd) .. "/", "")
+			if relative ~= fname then
+				local project = vim.fn.fnamemodify(cwd, ":t")
+				fname = ".../" .. project .. "/" .. relative
+			end
+		end
+
+		return string.format(
+			"%s:%d:%d: [%s] %s",
+			fname,
+			d.lnum + 1,
+			d.col + 1,
+			severity_map[d.severity] or "?",
+			d.message
+		)
+	end, diags)
+
+	vim.fn.setreg("+", table.concat(lines, "\n"))
+	print("Diagnostics copied to clipboard")
+end, { desc = "Yank diagnostics to clipboard" })
 -- Improved diagnostic navigation with try-catch
 keymap.set("n", "[d", function()
 	local ok, err = pcall(vim.diagnostic.jump, { count = -1 })
