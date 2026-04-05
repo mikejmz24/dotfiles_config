@@ -10,7 +10,7 @@ return {
 		local cmp_nvim_lsp = require("cmp_nvim_lsp")
 		local keymap = vim.keymap
 
-		local on_attach = function(client, bufnr)
+		local on_attach = function(_, bufnr)
 			local opts = { noremap = true, silent = true, buffer = bufnr }
 
 			-- LSP keybinds
@@ -125,86 +125,86 @@ return {
 			})
 		end
 
-		-- ===================================================================
-		-- ELEGANT SOLUTION: Automatically prevent duplicate LSP clients
-		-- ===================================================================
-
-		-- Enhanced function to prevent duplicate LSP clients at attach time
-		local function prevent_duplicate_lsp_clients()
-			print("🔧 Enabling LSP duplicate prevention...")
-
-			local active_clients_by_key = {}
-			local seen_client_ids = {} -- Track which client IDs we've already processed
-
-			-- Hook into LspAttach event to catch duplicates as they attach
-			vim.api.nvim_create_autocmd("LspAttach", {
-				callback = function(args)
-					local client = vim.lsp.get_client_by_id(args.data.client_id)
-					if not client then
-						return
-					end
-
-					local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
-
-					-- If we've already seen this exact client ID, it's just attaching to another buffer
-					-- This is normal behavior, not a duplicate
-					if seen_client_ids[client.id] then
-						return -- Silent - no need to log normal buffer attachments
-					end
-
-					-- Mark this client ID as seen
-					seen_client_ids[client.id] = true
-
-					-- Check if we already have a DIFFERENT client with this name + root combination
-					if active_clients_by_key[client_key] then
-						local existing_client_id = active_clients_by_key[client_key]
-						local existing_client = vim.lsp.get_client_by_id(existing_client_id)
-
-						if existing_client and existing_client_id ~= client.id then
-							print(
-								string.format(
-									"🚫 STOPPING duplicate %s client (ID: %d) - keeping existing (ID: %d)",
-									client.name,
-									client.id,
-									existing_client_id
-								)
-							)
-
-							-- Stop the duplicate client immediately
-							vim.lsp.stop_client(client.id, true)
-							return
-						end
-					end
-
-					-- This is the first/primary client for this key
-					active_clients_by_key[client_key] = client.id
-					print(string.format("✅ Registered %s client (ID: %d) as primary", client.name, client.id))
-				end,
-			})
-
-			-- Clean up tracking when clients stop
-			vim.api.nvim_create_autocmd("LspDetach", {
-				callback = function(args)
-					local client = vim.lsp.get_client_by_id(args.data.client_id)
-					if client then
-						local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
-						if active_clients_by_key[client_key] == args.data.client_id then
-							active_clients_by_key[client_key] = nil
-							seen_client_ids[args.data.client_id] = nil
-							print(
-								string.format(
-									"🧹 Cleaned up tracking for %s client (ID: %d)",
-									client.name,
-									args.data.client_id
-								)
-							)
-						end
-					end
-				end,
-			})
-		end
-		-- Enable automatic duplicate prevention and cleanup
-		prevent_duplicate_lsp_clients()
+		-- -- ===================================================================
+		-- -- ELEGANT SOLUTION: Automatically prevent duplicate LSP clients
+		-- -- ===================================================================
+		--
+		-- -- Enhanced function to prevent duplicate LSP clients at attach time
+		-- local function prevent_duplicate_lsp_clients()
+		-- 	print("🔧 Enabling LSP duplicate prevention...")
+		--
+		-- 	local active_clients_by_key = {}
+		-- 	local seen_client_ids = {} -- Track which client IDs we've already processed
+		--
+		-- 	-- Hook into LspAttach event to catch duplicates as they attach
+		-- 	vim.api.nvim_create_autocmd("LspAttach", {
+		-- 		callback = function(args)
+		-- 			local client = vim.lsp.get_client_by_id(args.data.client_id)
+		-- 			if not client then
+		-- 				return
+		-- 			end
+		--
+		-- 			local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
+		--
+		-- 			-- If we've already seen this exact client ID, it's just attaching to another buffer
+		-- 			-- This is normal behavior, not a duplicate
+		-- 			if seen_client_ids[client.id] then
+		-- 				return -- Silent - no need to log normal buffer attachments
+		-- 			end
+		--
+		-- 			-- Mark this client ID as seen
+		-- 			seen_client_ids[client.id] = true
+		--
+		-- 			-- Check if we already have a DIFFERENT client with this name + root combination
+		-- 			if active_clients_by_key[client_key] then
+		-- 				local existing_client_id = active_clients_by_key[client_key]
+		-- 				local existing_client = vim.lsp.get_client_by_id(existing_client_id)
+		--
+		-- 				if existing_client and existing_client_id ~= client.id then
+		-- 					print(
+		-- 						string.format(
+		-- 							"🚫 STOPPING duplicate %s client (ID: %d) - keeping existing (ID: %d)",
+		-- 							client.name,
+		-- 							client.id,
+		-- 							existing_client_id
+		-- 						)
+		-- 					)
+		--
+		-- 					-- Stop the duplicate client immediately
+		-- 					client:stop(true)
+		-- 					return
+		-- 				end
+		-- 			end
+		--
+		-- 			-- This is the first/primary client for this key
+		-- 			active_clients_by_key[client_key] = client.id
+		-- 			print(string.format("✅ Registered %s client (ID: %d) as primary", client.name, client.id))
+		-- 		end,
+		-- 	})
+		--
+		-- 	-- Clean up tracking when clients stop
+		-- 	vim.api.nvim_create_autocmd("LspDetach", {
+		-- 		callback = function(args)
+		-- 			local client = vim.lsp.get_client_by_id(args.data.client_id)
+		-- 			if client then
+		-- 				local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
+		-- 				if active_clients_by_key[client_key] == args.data.client_id then
+		-- 					active_clients_by_key[client_key] = nil
+		-- 					seen_client_ids[args.data.client_id] = nil
+		-- 					print(
+		-- 						string.format(
+		-- 							"🧹 Cleaned up tracking for %s client (ID: %d)",
+		-- 							client.name,
+		-- 							args.data.client_id
+		-- 						)
+		-- 					)
+		-- 				end
+		-- 			end
+		-- 		end,
+		-- 	})
+		-- end
+		-- -- Enable automatic duplicate prevention and cleanup
+		-- prevent_duplicate_lsp_clients()
 
 		-- ===================================================================
 		-- LSP SERVER CONFIGURATIONS
@@ -217,14 +217,14 @@ return {
 				on_attach = on_attach,
 				settings = {
 					python = {
-						pythonPath = (function()
-							-- Look for .venv in the project root, fall back to system python
-							local venv = vim.fn.getcwd() .. "/.venv/bin/python"
-							if vim.fn.executable(venv) == 1 then
-								return venv
-							end
-							return vim.fn.exepath("python3") or vim.fn.exepath("python")
-						end)(),
+						-- pythonPath = (function()
+						-- 	-- Look for .venv in the project root, fall back to system python
+						-- 	local venv = vim.fn.getcwd() .. "/.venv/bin/python"
+						-- 	if vim.fn.executable(venv) == 1 then
+						-- 		return venv
+						-- 	end
+						-- 	return vim.fn.exepath("python3") or vim.fn.exepath("python")
+						-- end)(),
 						analysis = {
 							autoSearchPaths = true,
 							extraPaths = { "~/Documents/localDocuments/" },
@@ -260,7 +260,9 @@ return {
 				capabilities = capabilities,
 				on_attach = on_attach,
 				cmd = { "templ", "lsp" },
-				filetypes = { "html", "templ" },
+				filetypes = { --[[ "html", ]]
+					"templ",
+				},
 			},
 			["sqls"] = {
 				capabilities = capabilities,
@@ -280,7 +282,6 @@ return {
 					sqls = {
 						format = false,
 						defaultDriver = "mysql",
-						connections = {},
 					},
 				},
 			},
@@ -333,14 +334,14 @@ return {
 			end
 
 			-- Kill duplicates (keep the first one)
-			for key, clients in pairs(by_name_and_root) do
+			for _, clients in pairs(by_name_and_root) do
 				if #clients > 1 then
 					print(string.format("🔫 Found %d duplicate %s clients", #clients, clients[1].name))
 					-- Keep the first client, kill the rest
 					for i = 2, #clients do
 						local client = clients[i]
 						print(string.format("   Killing client ID: %d", client.id))
-						vim.lsp.stop_client(client.id, true)
+						client:stop(true)
 						killed = killed + 1
 					end
 				end

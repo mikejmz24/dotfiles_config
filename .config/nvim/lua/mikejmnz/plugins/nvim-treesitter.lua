@@ -8,31 +8,13 @@ return {
 			"windwp/nvim-ts-autotag",
 		},
 		config = function()
-			-- import nvim-treesitter plugin
 			local treesitter = require("nvim-treesitter.configs")
 
-			-- configure treesitter
-			treesitter.setup({ -- enable syntax highlighting
-				highlight = {
-					enable = true,
-				},
-				-- enable indentation
+			treesitter.setup({
+				highlight = { enable = true },
 				indent = { enable = true },
-				-- enable autotagging (w/ nvim-ts-autotag plugin)
-				autotag = {
-					enable = true,
-				},
-				-- ensure these language parsers are installed
+
 				ensure_installed = {
-					--         "javascript",
-					--          "typescript",
-					--          "tsx",
-					--          "yaml",
-					--          "prisma",
-					--          "markdown",
-					--          "markdown_inline",
-					--          "svelte",
-					--          "graphql",
 					"html",
 					"css",
 					"json",
@@ -48,20 +30,52 @@ return {
 					"awk",
 					"sql",
 					"query",
+					"yaml",
+					"toml",
+					"regex",
+					"jq",
 				},
+
 				incremental_selection = {
 					enable = true,
 					keymaps = {
-						init_selection = "<C-space>",
-						node_incremental = "<C-space>",
+						init_selection = "<CR>", -- changed: was <C-space>, conflicts with cmp
+						node_incremental = "<CR>",
 						scope_incremental = false,
 						node_decremental = "<bs>",
 					},
 				},
+
+				textobjects = {
+					select = {
+						enable = true,
+						lookahead = true,
+						keymaps = {
+							["af"] = "@function.outer",
+							["if"] = "@function.inner",
+							["ac"] = "@class.outer",
+							["ic"] = "@class.inner",
+							["aa"] = "@parameter.outer",
+							["ia"] = "@parameter.inner",
+						},
+					},
+					move = {
+						enable = true,
+						set_jumps = true,
+						goto_next_start = {
+							["]f"] = "@function.outer",
+							["]c"] = "@class.outer",
+						},
+						goto_previous_start = {
+							["[f"] = "@function.outer",
+							["[c"] = "@class.outer",
+						},
+					},
+				},
 			})
 
-			-- enable nvim-ts-context-commentstring plugin for commenting tsx and jsx
-			--require('ts_context_commentstring').setup {}
+			-- autotag requires its own setup call since v0.7.0
+			require("nvim-ts-autotag").setup()
 		end,
 	},
 }

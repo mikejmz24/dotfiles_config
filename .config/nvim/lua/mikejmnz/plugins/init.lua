@@ -17,7 +17,6 @@ return {
 	require("mikejmnz.plugins.linting"),
 	require("mikejmnz.plugins.lsp.lspconfig"),
 	require("mikejmnz.plugins.lsp.mason"),
-	require("mikejmnz.plugins.lsp.none-ls"),
 	require("mikejmnz.plugins.lualine"),
 	require("mikejmnz.plugins.nvim-autopairs"),
 	require("mikejmnz.plugins.nvim-cmp"),

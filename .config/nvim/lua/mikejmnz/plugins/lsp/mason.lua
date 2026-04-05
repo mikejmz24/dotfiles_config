@@ -5,15 +5,10 @@ return {
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
 	},
 	config = function()
-		-- import mason
 		local mason = require("mason")
-
-		-- import mason-lspconfig
 		local mason_lspconfig = require("mason-lspconfig")
-
 		local mason_tool_installer = require("mason-tool-installer")
 
-		-- enable mason and configure icons
 		mason.setup({
 			ui = {
 				icons = {
@@ -24,42 +19,35 @@ return {
 			},
 		})
 
+		-- LSP servers (installed via mason-lspconfig)
 		mason_lspconfig.setup({
-			-- list of servers for mason to install
 			ensure_installed = {
-				-- "tsserver",
 				"html",
-				-- "htmx-lsp",
 				"cssls",
-				-- "tailwindcss",
-				-- "svelte",
 				"lua_ls",
-				-- "graphql",
-				-- "emmet_ls",
-				-- "prismals",
 				"templ",
 				"gopls",
 				"jqls",
 				"pyright",
+				"sqls", -- was missing; configured in lspconfig.lua
+				"texlab", -- was missing; configured in lspconfig.lua
 			},
-			-- auto-install configured servers (with lspconfig)
-			automatic_installation = true, -- not the same as ensure_installed
+			-- automatic_installation removed: deprecated in mason-lspconfig v2
 		})
 
+		-- Formatters and linters (installed via mason-tool-installer)
 		mason_tool_installer.setup({
 			ensure_installed = {
-				"prettier", -- prettier formatter
+				"prettier", -- formatter
 				"stylua", -- lua formatter
-				"isort", -- python formatter
+				"isort", -- python import sorter
 				"black", -- python formatter
 				"pylint", -- python linter
-				-- "eslint_d", -- js linter
-				"golangci-lint", -- go linter
+				"golangci-lint", -- go meta-linter
 				"gofumpt", -- go formatter
-				"goimports", -- go formatter
-				"gomodifytags", -- go formatter
-				"jqls",
-				-- "sqlfluff",
+				"goimports", -- go import formatter
+				"gomodifytags", -- go struct tag tool
+				-- jqls removed: it's an LSP server, belongs in mason_lspconfig above
 			},
 		})
 	end,

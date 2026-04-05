@@ -1,4 +1,11 @@
+vim.env.PATH = "/opt/homebrew/bin:" .. vim.env.PATH
+
 require("mikejmnz.core")
+
+vim.filetype.add({
+	extension = {
+		templ = "templ",
+	},
+})
+
 require("mikejmnz.lazy")
--- init.lua or in a separate file sourced by your init.lua
-vim.api.nvim_command("autocmd BufRead,BufNewFile *.templ set filetype=templ")

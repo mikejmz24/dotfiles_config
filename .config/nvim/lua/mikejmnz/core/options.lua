@@ -1,62 +1,66 @@
 local opt = vim.opt
 
--- line numbers
+-- Line numbers
 opt.number = true
+-- opt.relativenumber = true
 
--- tabs & indentation
+-- Tabs & indentation
 opt.tabstop = 2
 opt.shiftwidth = 2
 opt.expandtab = true
 opt.autoindent = true
 
--- line wrapping
+-- Line wrapping
 opt.wrap = false
 
--- search settings
+-- Scrolling context
+opt.scrolloff = 8
+opt.sidescrolloff = 8
+
+-- Search settings
 opt.ignorecase = true
 opt.smartcase = true
+opt.inccommand = "split" -- live preview of substitutions
 
--- cursor line
+-- Cursor
 opt.cursorline = true
 
--- appearance
+-- Appearance
 opt.termguicolors = true
 
--- backspace
+-- Backspace
 opt.backspace = "indent,eol,start"
 
--- clipboard
+-- Clipboard
 opt.clipboard:append("unnamedplus")
 
--- split windows
+-- Split windows
 opt.splitright = true
 opt.splitbelow = true
 
--- Additional performance and stability options
-opt.updatetime = 250 -- Faster completion and diagnostics
-opt.timeoutlen = 300 -- Faster which-key popup
-opt.redrawtime = 10000 -- Allow more time for syntax highlighting
-opt.synmaxcol = 240 -- Limit syntax highlighting for long lines
-opt.lazyredraw = false -- Don't lazy redraw
-opt.ttyfast = true -- Fast terminal connection
+-- Performance
+opt.updatetime = 250 -- faster diagnostics and CursorHold
+opt.timeoutlen = 300 -- faster which-key popup
+opt.redrawtime = 10000 -- allow more time for syntax highlighting on large files
+opt.synmaxcol = 240 -- limit syntax highlighting for very long lines
 
--- Better file handling
-opt.autoread = true -- Auto reload files changed outside nvim
-opt.autowrite = true -- Auto write files when switching buffers
-opt.confirm = true -- Confirm before closing unsaved files
+-- File handling
+opt.autoread = true -- auto reload files changed outside nvim
+opt.autowrite = true -- auto write when switching buffers
+opt.confirm = true -- confirm instead of erroring on unsaved changes
 
--- Better search and replace
-opt.inccommand = "split" -- Show incremental search results
+-- Completion
+opt.completeopt = "menu,menuone,noselect" -- preview removed: conflicts with nvim-cmp docs
+opt.pumheight = 10
 
--- Better completion
-opt.completeopt = "menu,menuone,noselect,preview"
-opt.pumheight = 10 -- Limit completion menu height
+-- Sign column
+opt.signcolumn = "yes" -- always show, 1 column (adjust to "yes:2" if needed)
 
--- Diagnostics stability
-opt.signcolumn = "yes:2" -- Always show sign column with space for 2 signs
+-- File navigation
+opt.isfname:append("@-@") -- allows gf to handle @ in filenames
 
--- Disable unused providers to eliminate warnings
-vim.g.loaded_node_provider = 0 -- Disable Node.js provider
-vim.g.loaded_perl_provider = 0 -- Disable Perl provider
--- vim.g.loaded_python3_provider = 0   -- Disable Python provider
-vim.g.loaded_ruby_provider = 0 -- Disable Ruby provider
+-- Disable unused providers
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
+-- vim.g.loaded_python3_provider = 0  -- keep enabled: pyright uses it

@@ -1,11 +1,11 @@
 return {
 	"mfussenegger/nvim-lint",
 	lazy = true,
-	event = { "BufReadPre", "BufNewFile", "BufWritePost" }, -- to disable, comment this out
+	event = { "BufReadPre", "BufNewFile" },
 	config = function()
 		local lint = require("lint")
 
-		-- -- Configure sqlfluff with mysql dialect
+		-- Custom sqlfluff linter definition
 		lint.linters.sqlfluff = {
 			cmd = "sqlfluff",
 			args = {
@@ -13,95 +13,71 @@ return {
 				"--dialect",
 				"mysql",
 				"--config",
-				"/Users/miguel.jimenez2/.dotfiles/.config/nvim/.sqlfluff", -- Explicitly set the config path
+				vim.fn.stdpath("config") .. "/.sqlfluff",
 				"--format",
 				"json",
-				"-", -- Read from stdin
+				"-",
 			},
 			stdin = true,
 			stream = "stdout",
 			ignore_exitcode = true,
-			parser = function(output, bufnr)
+			parser = function(output)
 				local diagnostics = {}
-				if output and output ~= "" then
-					local ok, decoded = pcall(vim.json.decode, output)
-					if ok and decoded and decoded[1] and decoded[1].violations then
-						for _, violation in ipairs(decoded[1].violations) do
-							if violation.start_line_no and violation.start_line_pos then
-								table.insert(diagnostics, {
-									lnum = violation.start_line_no - 1,
-									col = violation.start_line_pos - 1,
-									end_lnum = violation.end_line_no and (violation.end_line_no - 1) or nil,
-									end_col = violation.end_line_pos and (violation.end_line_pos - 1) or nil,
-									message = string.format("[%s] %s", violation.code, violation.description),
-									severity = vim.diagnostic.severity.ERROR,
-									source = "sqlfluff",
-								})
-							end
+				if not output or output == "" then
+					return diagnostics
+				end
+
+				local severity_map = {
+					warning = vim.diagnostic.severity.WARN,
+					error = vim.diagnostic.severity.ERROR,
+				}
+
+				local ok, decoded = pcall(vim.json.decode, output)
+				if ok and decoded and decoded[1] and decoded[1].violations then
+					for _, v in ipairs(decoded[1].violations) do
+						if v.start_line_no and v.start_line_pos then
+							table.insert(diagnostics, {
+								lnum = v.start_line_no - 1,
+								col = v.start_line_pos - 1,
+								end_lnum = v.end_line_no and (v.end_line_no - 1) or nil,
+								end_col = v.end_line_pos and (v.end_line_pos - 1) or nil,
+								message = string.format("[%s] %s", v.code, v.description),
+								severity = severity_map[v.severity] or vim.diagnostic.severity.WARN,
+								source = "sqlfluff",
+							})
 						end
 					end
 				end
 				return diagnostics
 			end,
 		}
-		lint.linters.golangcilint = {
-			cmd = "golangci-lint",
-			args = {
-				"run",
-			},
-			stdin = false,
-			ignore_exitcode = true,
-			parser = function()
-				return {}
-			end, -- prevent crash
-		}
+		-- golangcilint custom definition removed: using built-in "golangci-lint" instead
 
 		lint.linters_by_ft = {
-			-- javascript = { "eslint_d" },
-			-- typescript = { "eslint_d" },
-			-- javascriptreact = { "eslint_d" },
-			-- typescriptreact = { "eslint_d" },
-			-- svelte = { "eslint_d" },
-			-- go = { "golangci-lint" },
 			sql = { "sqlfluff" },
 			mysql = { "sqlfluff" },
-			go = { "golangcilint" },
+			go = { "golangci-lint" }, -- fixed: was "golangcilint" (custom, broken)
 			python = { "pylint" },
-			["_"] = {}, -- {revent fallback for unknown filetypes like Make
+			["_"] = {}, -- prevent fallback for unknown filetypes
 		}
 
 		local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
-		local debounce_timer = nil
-		local debounce_delay = 500 -- in ms
 
+		-- Lint on enter and after save
+		vim.api.nvim_create_autocmd({ "BufReadPost", "BufWritePost" }, {
+			group = lint_augroup,
+			callback = function()
+				require("lint").try_lint()
+			end,
+		})
+
+		-- Lint after leaving insert mode (debounced)
 		vim.api.nvim_create_autocmd("InsertLeave", {
 			group = lint_augroup,
 			callback = function()
-				-- Cancel any existing timer
-				if debounce_timer then
-					pcall(function()
-						debounce_timer:stop()
-						debounce_timer:close()
-					end)
-					debounce_timer = nil
-				end
-
-				-- Create a new timer using vim.uv (new API)
-				debounce_timer = vim.uv.new_timer()
-				debounce_timer:start(
-					debounce_delay,
-					0,
-					vim.schedule_wrap(function()
-						require("lint").try_lint()
-						-- Safe cleanup
-						pcall(function()
-							if debounce_timer then
-								debounce_timer:close()
-								debounce_timer = nil
-							end
-						end)
-					end)
-				)
+				vim.defer_fn(function()
+					require("lint").try_lint()
+				end, 500)
 			end,
 		})
 

@@ -3,7 +3,7 @@ return {
 	dependencies = { "nvim-tree/nvim-web-devicons" },
 	config = function()
 		local lualine = require("lualine")
-		local lazy_status = require("lazy.status") -- to configure lazy pending updates count
+		local lazy_status = require("lazy.status")
 
 		local colors = {
 			blue = "#65D1FF",
@@ -43,20 +43,25 @@ return {
 				c = { bg = colors.bg, fg = colors.fg },
 			},
 			inactive = {
-				a = { bg = colors.inactive_bg, fg = colors.semilightgray, gui = "bold" },
-				b = { bg = colors.inactive_bg, fg = colors.semilightgray },
-				c = { bg = colors.inactive_bg, fg = colors.semilightgray },
+				-- fixed: was colors.semilightgray which is undefined
+				a = { bg = colors.inactive_bg, fg = colors.fg, gui = "bold" },
+				b = { bg = colors.inactive_bg, fg = colors.fg },
+				c = { bg = colors.inactive_bg, fg = colors.fg },
 			},
 		}
 
-		-- configure lualine with modified theme
 		lualine.setup({
 			options = {
 				theme = my_lualine_theme,
 				icons_enabled = true,
 				globalstatus = true,
+				component_separators = { left = "", right = "" },
+				section_separators = { left = "", right = "" },
 			},
 			sections = {
+				lualine_a = { "mode" },
+				lualine_b = { "branch", "diff", "diagnostics" },
+				lualine_c = { { "filename", path = 1 } },
 				lualine_x = {
 					{
 						lazy_status.updates,
@@ -67,6 +72,8 @@ return {
 					{ "fileformat" },
 					{ "filetype" },
 				},
+				lualine_y = { "progress" },
+				lualine_z = { "location" },
 			},
 		})
 	end,

@@ -3,35 +3,40 @@ vim.g.mapleader = " "
 
 local keymap = vim.keymap
 
-keymap.set("n", "<leader>nh", ":nohl<CR>", { desc = "Clear search highlights" })
+keymap.set("n", "<leader>nh", vim.cmd.nohl, { desc = "Clear search highlights" })
 
 -- Window management
 keymap.set("n", "<leader>sv", "<C-w>v", { desc = "Split window vertically" })
 keymap.set("n", "<leader>sh", "<C-w>s", { desc = "Split window horizontally" })
 keymap.set("n", "<leader>se", "<C-w>=", { desc = "Make splits equal size" })
 keymap.set("n", "<leader>sx", "<cmd>close<CR>", { desc = "Close current split" })
-keymap.set("n", "<C-l>", "<C-W><", { desc = "Adjust split window size to the left" })
-keymap.set("n", "<C-h>", "<C-W>>", { desc = "Adjust split window to the right" })
-keymap.set("n", "<C-k>", "<C-W>+", { desc = "Adjust split window size up" })
-keymap.set("n", "<C-j>", "<C-W>-", { desc = "Adjust split window size down" })
 
--- Better buffer navigation
-keymap.set("n", "<S-h>", ":bprevious<CR>", { desc = "Previous buffer" })
-keymap.set("n", "<S-l>", ":bnext<CR>", { desc = "Next buffer" })
-keymap.set("n", "<leader>bd", ":bdelete<CR>", { desc = "Delete buffer" })
+-- Resize splits with Alt keys (preserves <C-h/j/k/l> for split navigation)
+keymap.set("n", "<A-l>", "<C-W><", { desc = "Resize split left" })
+keymap.set("n", "<A-h>", "<C-W>>", { desc = "Resize split right" })
+keymap.set("n", "<A-k>", "<C-W>+", { desc = "Resize split up" })
+keymap.set("n", "<A-j>", "<C-W>-", { desc = "Resize split down" })
 
--- Better diagnostic navigation with error handling
+-- Buffer navigation
+keymap.set("n", "<S-h>", "<cmd>bprevious<CR>", { desc = "Previous buffer" })
+keymap.set("n", "<S-l>", "<cmd>bnext<CR>", { desc = "Next buffer" })
+keymap.set("n", "<leader>bd", "<cmd>bdelete<CR>", { desc = "Delete buffer" })
+
+-- Diagnostic navigation
+-- NOTE: [d and ]d are defined here globally; do NOT redefine them in lspconfig on_attach
+keymap.set("n", "[d", function()
+	vim.diagnostic.jump({ count = -1, float = true })
+end, { desc = "Go to previous diagnostic" })
+
+keymap.set("n", "]d", function()
+	vim.diagnostic.jump({ count = 1, float = true })
+end, { desc = "Go to next diagnostic" })
+
+-- Show diagnostic float for current cursor position
+-- NOTE: consolidates <leader>d and <leader>e — remove <leader>d from lspconfig on_attach
 keymap.set("n", "<leader>e", function()
-	local opts = {
-		focusable = false,
-		close_events = { "BufLeave", "CursorMoved", "InsertEnter", "FocusLost" },
-		border = "rounded",
-		source = "always",
-		prefix = " ",
-		scope = "cursor",
-	}
-	vim.diagnostic.open_float(nil, opts)
-end, { desc = "Show diagnostic error messages" })
+	vim.diagnostic.open_float({ border = "rounded", scope = "cursor" })
+end, { desc = "Show diagnostic float" })
 
 keymap.set("n", "<leader>q", function()
 	vim.diagnostic.setloclist({ open = true })
@@ -42,7 +47,7 @@ keymap.set("n", "<leader>yd", function()
 	local diags = vim.diagnostic.get()
 
 	if #diags == 0 then
-		print("No diagnostics to copy")
+		vim.notify("No diagnostics to copy", vim.log.levels.WARN)
 		return
 	end
 
@@ -82,42 +87,15 @@ keymap.set("n", "<leader>yd", function()
 	end, diags)
 
 	vim.fn.setreg("+", table.concat(lines, "\n"))
-	print("Diagnostics copied to clipboard")
+	vim.notify("Diagnostics copied to clipboard (" .. #lines .. " items)", vim.log.levels.INFO)
 end, { desc = "Yank diagnostics to clipboard" })
--- Improved diagnostic navigation with try-catch
-keymap.set("n", "[d", function()
-	local ok, err = pcall(vim.diagnostic.jump, { count = -1 })
-	if not ok then
-		print("No more diagnostics: " .. err)
-	end
-end, { desc = "Go to previous diagnostic" })
 
-keymap.set("n", "]d", function()
-	local ok, err = pcall(vim.diagnostic.jump, { count = 1 })
-	if not ok then
-		print("No more diagnostics: " .. err)
-	end
-end, { desc = "Go to next diagnostic" })
-
--- -- Quick diagnostic refresh
--- keymap.set("n", "<leader>dR", function()
--- 	vim.diagnostic.reset()
--- 	vim.defer_fn(function()
--- 		vim.diagnostic.enable()
--- 		print("Diagnostics refreshed")
--- 	end, 100)
--- end, { desc = "Refresh diagnostics" })
-
--- Better LSP restart
-keymap.set("n", "<leader>lR", function()
-	vim.cmd("LspRestart")
-	vim.defer_fn(function()
-		print("LSP restarted")
-	end, 1000)
-end, { desc = "Restart LSP" })
+-- LSP restart
+keymap.set("n", "<leader>lR", "<cmd>LspRestart<CR>", { desc = "Restart LSP" })
 
 -- Better paste in visual mode (keeps register)
-keymap.set("v", "p", '"_dP', { desc = "Paste without yanking" })
+-- Uses P which in Neovim 0.10+ does not clobber the unnamed register
+keymap.set("x", "p", "P", { desc = "Paste without yanking" })
 
 -- Move lines up/down in visual mode
 keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = "Move selection up" })
