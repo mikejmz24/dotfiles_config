@@ -23,7 +23,9 @@ keymap.set("n", "<S-l>", "<cmd>bnext<CR>", { desc = "Next buffer" })
 keymap.set("n", "<leader>bd", "<cmd>bdelete<CR>", { desc = "Delete buffer" })
 
 -- Diagnostic navigation
--- NOTE: [d and ]d are defined here globally; do NOT redefine them in lspconfig on_attach
+-- NOTE: [d and ]d are defined here globally; do NOT redefine them in lspconfig on_attach.
+-- float = true opens the diagnostic float automatically on jump, removing need for a
+-- separate keymap just to view the message.
 keymap.set("n", "[d", function()
 	vim.diagnostic.jump({ count = -1, float = true })
 end, { desc = "Go to previous diagnostic" })
@@ -33,7 +35,8 @@ keymap.set("n", "]d", function()
 end, { desc = "Go to next diagnostic" })
 
 -- Show diagnostic float for current cursor position
--- NOTE: consolidates <leader>d and <leader>e — remove <leader>d from lspconfig on_attach
+-- NOTE: <leader>d is intentionally NOT defined here — it lives in lspconfig on_attach
+-- as a buffer-local mapping so it only activates when an LSP is attached.
 keymap.set("n", "<leader>e", function()
 	vim.diagnostic.open_float({ border = "rounded", scope = "cursor" })
 end, { desc = "Show diagnostic float" })
@@ -43,6 +46,7 @@ keymap.set("n", "<leader>q", function()
 end, { desc = "Open diagnostic quickfix list" })
 
 -- Yank all diagnostics to clipboard
+-- Useful for sharing diagnostics (e.g. pasting into a bug report or AI prompt).
 keymap.set("n", "<leader>yd", function()
 	local diags = vim.diagnostic.get()
 
@@ -75,7 +79,6 @@ keymap.set("n", "<leader>yd", function()
 				fname = ".../" .. project .. "/" .. relative
 			end
 		end
-
 		return string.format(
 			"%s:%d:%d: [%s] %s",
 			fname,
@@ -91,16 +94,22 @@ keymap.set("n", "<leader>yd", function()
 end, { desc = "Yank diagnostics to clipboard" })
 
 -- LSP restart
-keymap.set("n", "<leader>lR", "<cmd>LspRestart<CR>", { desc = "Restart LSP" })
+-- NOTE: :LspRestart is the legacy alias (Nvim 0.11 and older).
+-- On Nvim 0.12+, the correct command is :lsp restart (native API).
+-- Also update <leader>rs in lspconfig.lua on_attach to use "<cmd>lsp restart<CR>".
+keymap.set("n", "<leader>lR", "<cmd>lsp restart<CR>", { desc = "Restart LSP" })
 
 -- Better paste in visual mode (keeps register)
--- Uses P which in Neovim 0.10+ does not clobber the unnamed register
+-- P in Neovim 0.10+ does not clobber the unnamed register in visual mode.
 keymap.set("x", "p", "P", { desc = "Paste without yanking" })
 
--- Move lines up/down in visual mode
+-- Move lines up/down in visual mode.
+-- NOTE: uses : (not <cmd>) intentionally — <cmd> does not preserve '< '> marks
+-- needed by :m to move relative to the visual selection.
+-- J is intentionally overridden here (visual join is rarely useful vs. line moving).
 keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = "Move selection up" })
 keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move selection down" })
 
--- Better indenting in visual mode
+-- Better indenting in visual mode (reselects after indent so you can repeat)
 keymap.set("v", ">", ">gv", { desc = "Indent right and reselect" })
 keymap.set("v", "<", "<gv", { desc = "Indent left and reselect" })

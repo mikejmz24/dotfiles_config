@@ -6,7 +6,6 @@ return {
 		{ "antosha417/nvim-lsp-file-operations", config = true },
 	},
 	config = function()
-		-- local lspconfig = require("lspconfig")
 		local cmp_nvim_lsp = require("cmp_nvim_lsp")
 		local keymap = vim.keymap
 
@@ -14,6 +13,8 @@ return {
 			local opts = { noremap = true, silent = true, buffer = bufnr }
 
 			-- LSP keybinds
+			-- NOTE: [d, ]d, and <leader>d are defined globally in keymaps.lua
+			-- They are intentionally NOT defined here to avoid buffer-local override
 			keymap.set(
 				"n",
 				"gR",
@@ -59,38 +60,40 @@ return {
 			)
 			keymap.set(
 				"n",
-				"<leader>d",
-				vim.diagnostic.open_float,
-				vim.tbl_extend("force", opts, { desc = "Show line diagnostics" })
-			)
-
-			keymap.set("n", "[d", function()
-				vim.diagnostic.jump({ count = -1 })
-			end, vim.tbl_extend("force", opts, { desc = "Go to previous diagnostic" }))
-
-			keymap.set("n", "]d", function()
-				vim.diagnostic.jump({ count = 1 })
-			end, vim.tbl_extend("force", opts, { desc = "Go to next diagnostic" }))
-
-			keymap.set(
-				"n",
 				"K",
 				vim.lsp.buf.hover,
 				vim.tbl_extend("force", opts, { desc = "Show documentation for what is under cursor" })
 			)
-			keymap.set("n", "<leader>rs", ":LspRestart<CR>", vim.tbl_extend("force", opts, { desc = "Restart LSP" }))
+
+			-- NOTE: :LspRestart is the legacy alias (Nvim 0.11 and older).
+			-- On Nvim 0.12+, the correct command is :lsp restart.
+			keymap.set(
+				"n",
+				"<leader>rs",
+				"<cmd>lsp restart<CR>",
+				vim.tbl_extend("force", opts, { desc = "Restart LSP" })
+			)
 		end
 
 		local capabilities = cmp_nvim_lsp.default_capabilities()
 
-		-- Configure diagnostics (this enables them globally)
+		-- Single consolidated diagnostic config.
+		-- Previously two separate calls existed here — merged into one.
+		-- sign_define() removed: not supported in Neovim 0.12+.
 		vim.diagnostic.config({
 			virtual_text = {
 				spacing = 4,
 				source = "if_many",
 				prefix = "●",
 			},
-			signs = true,
+			signs = {
+				text = {
+					[vim.diagnostic.severity.ERROR] = " ",
+					[vim.diagnostic.severity.WARN] = " ",
+					[vim.diagnostic.severity.HINT] = "󰠠 ",
+					[vim.diagnostic.severity.INFO] = " ",
+				},
+			},
 			underline = true,
 			update_in_insert = false,
 			severity_sort = true,
@@ -103,128 +106,21 @@ return {
 			},
 		})
 
-		-- Diagnostic signs - avoid reserved word 'type'
-		local diagnostic_signs = { Error = " ", Warn = " ", Hint = "󰠠 ", Info = " " }
-
-		for sign_name, icon in pairs(diagnostic_signs) do
-			local hl = "DiagnosticSign" .. sign_name
-			vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
-		end
-
-		-- Configure signs for newer Neovim versions
-		if vim.fn.has("nvim-0.10") == 1 then
-			vim.diagnostic.config({
-				signs = {
-					text = {
-						[vim.diagnostic.severity.ERROR] = diagnostic_signs.Error,
-						[vim.diagnostic.severity.WARN] = diagnostic_signs.Warn,
-						[vim.diagnostic.severity.HINT] = diagnostic_signs.Hint,
-						[vim.diagnostic.severity.INFO] = diagnostic_signs.Info,
-					},
-				},
-			})
-		end
-
-		-- -- ===================================================================
-		-- -- ELEGANT SOLUTION: Automatically prevent duplicate LSP clients
-		-- -- ===================================================================
-		--
-		-- -- Enhanced function to prevent duplicate LSP clients at attach time
-		-- local function prevent_duplicate_lsp_clients()
-		-- 	print("🔧 Enabling LSP duplicate prevention...")
-		--
-		-- 	local active_clients_by_key = {}
-		-- 	local seen_client_ids = {} -- Track which client IDs we've already processed
-		--
-		-- 	-- Hook into LspAttach event to catch duplicates as they attach
-		-- 	vim.api.nvim_create_autocmd("LspAttach", {
-		-- 		callback = function(args)
-		-- 			local client = vim.lsp.get_client_by_id(args.data.client_id)
-		-- 			if not client then
-		-- 				return
-		-- 			end
-		--
-		-- 			local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
-		--
-		-- 			-- If we've already seen this exact client ID, it's just attaching to another buffer
-		-- 			-- This is normal behavior, not a duplicate
-		-- 			if seen_client_ids[client.id] then
-		-- 				return -- Silent - no need to log normal buffer attachments
-		-- 			end
-		--
-		-- 			-- Mark this client ID as seen
-		-- 			seen_client_ids[client.id] = true
-		--
-		-- 			-- Check if we already have a DIFFERENT client with this name + root combination
-		-- 			if active_clients_by_key[client_key] then
-		-- 				local existing_client_id = active_clients_by_key[client_key]
-		-- 				local existing_client = vim.lsp.get_client_by_id(existing_client_id)
-		--
-		-- 				if existing_client and existing_client_id ~= client.id then
-		-- 					print(
-		-- 						string.format(
-		-- 							"🚫 STOPPING duplicate %s client (ID: %d) - keeping existing (ID: %d)",
-		-- 							client.name,
-		-- 							client.id,
-		-- 							existing_client_id
-		-- 						)
-		-- 					)
-		--
-		-- 					-- Stop the duplicate client immediately
-		-- 					client:stop(true)
-		-- 					return
-		-- 				end
-		-- 			end
-		--
-		-- 			-- This is the first/primary client for this key
-		-- 			active_clients_by_key[client_key] = client.id
-		-- 			print(string.format("✅ Registered %s client (ID: %d) as primary", client.name, client.id))
-		-- 		end,
-		-- 	})
-		--
-		-- 	-- Clean up tracking when clients stop
-		-- 	vim.api.nvim_create_autocmd("LspDetach", {
-		-- 		callback = function(args)
-		-- 			local client = vim.lsp.get_client_by_id(args.data.client_id)
-		-- 			if client then
-		-- 				local client_key = string.format("%s:%s", client.name, client.config.root_dir or "none")
-		-- 				if active_clients_by_key[client_key] == args.data.client_id then
-		-- 					active_clients_by_key[client_key] = nil
-		-- 					seen_client_ids[args.data.client_id] = nil
-		-- 					print(
-		-- 						string.format(
-		-- 							"🧹 Cleaned up tracking for %s client (ID: %d)",
-		-- 							client.name,
-		-- 							args.data.client_id
-		-- 						)
-		-- 					)
-		-- 				end
-		-- 			end
-		-- 		end,
-		-- 	})
-		-- end
-		-- -- Enable automatic duplicate prevention and cleanup
-		-- prevent_duplicate_lsp_clients()
-
 		-- ===================================================================
 		-- LSP SERVER CONFIGURATIONS
 		-- ===================================================================
 
 		local servers = {
-			["htmx"] = { capabilities = capabilities, on_attach = on_attach },
+			["htmx"] = {
+				capabilities = capabilities,
+				on_attach = on_attach,
+			},
+
 			["pyright"] = {
 				capabilities = capabilities,
 				on_attach = on_attach,
 				settings = {
 					python = {
-						-- pythonPath = (function()
-						-- 	-- Look for .venv in the project root, fall back to system python
-						-- 	local venv = vim.fn.getcwd() .. "/.venv/bin/python"
-						-- 	if vim.fn.executable(venv) == 1 then
-						-- 		return venv
-						-- 	end
-						-- 	return vim.fn.exepath("python3") or vim.fn.exepath("python")
-						-- end)(),
 						analysis = {
 							autoSearchPaths = true,
 							extraPaths = { "~/Documents/localDocuments/" },
@@ -233,50 +129,46 @@ return {
 					},
 				},
 			},
+
 			["lua_ls"] = {
 				capabilities = capabilities,
 				on_attach = on_attach,
 				settings = {
 					Lua = {
-						diagnostics = { globals = { "vim" } },
-						workspace = {
-							library = {
-								[vim.fn.expand("$VIMRUNTIME/lua")] = true,
-								[vim.fn.stdpath("config") .. "/lua"] = true,
-							},
-							checkThirdParty = false,
-						},
-						runtime = {
-							version = "LuaJIT",
-							path = vim.split(package.path, ";"),
-						},
+						-- diagnostics.globals and workspace.library omitted:
+						-- lazydev.nvim handles these automatically
+						runtime = { version = "LuaJIT" },
 						telemetry = { enable = false },
+						workspace = { checkThirdParty = false },
 					},
 				},
 			},
-			["jqls"] = { capabilities = capabilities, on_attach = on_attach },
-			["gopls"] = { capabilities = capabilities, on_attach = on_attach },
+
+			["jqls"] = {
+				capabilities = capabilities,
+				on_attach = on_attach,
+			},
+
+			["gopls"] = {
+				capabilities = capabilities,
+				on_attach = on_attach,
+			},
+
 			["templ"] = {
 				capabilities = capabilities,
 				on_attach = on_attach,
 				cmd = { "templ", "lsp" },
-				filetypes = { --[[ "html", ]]
-					"templ",
-				},
+				filetypes = { "templ" },
 			},
+
 			["sqls"] = {
 				capabilities = capabilities,
 				on_attach = on_attach,
 				cmd = { "sqls" },
 				filetypes = { "sql", "mysql", "postgresql" },
-				-- root_dir = function(fname)
-				-- 	local util = require("lspconfig.util")
-				-- 	return util.root_pattern(".git")(fname)
-				-- 		or util.root_pattern("init.sql", "schema.sql")(fname)
-				-- 		or vim.fn.getcwd()
-				-- end,
 				root_dir = function(fname)
-					return vim.fs.root(fname, { ".git", "init.sql", "schema.sql" }) or vim.fn.getcwd()
+					-- getcwd() fallback removed: caused sqls to attach in unrelated projects
+					return vim.fs.root(fname, { ".git", "init.sql", "schema.sql" })
 				end,
 				settings = {
 					sqls = {
@@ -285,6 +177,7 @@ return {
 					},
 				},
 			},
+
 			["texlab"] = {
 				capabilities = capabilities,
 				on_attach = on_attach,
@@ -305,57 +198,51 @@ return {
 			},
 		}
 
-		-- -- Setup all servers
-		-- for server_name, config in pairs(servers) do
-		-- 	if lspconfig[server_name] then
-		-- 		lspconfig[server_name].setup(config)
-		-- 	end
-		-- end
+		-- Single source of truth for enabling LSP servers.
+		-- mason-lspconfig is NOT used to avoid double vim.lsp.enable() calls.
 		for server_name, config in pairs(servers) do
 			vim.lsp.config(server_name, config)
 			vim.lsp.enable(server_name)
 		end
 
 		-- ===================================================================
-		-- DEBUGGING AND UTILITY COMMANDS
+		-- UTILITY COMMANDS
 		-- ===================================================================
 
-		-- Command to kill duplicate LSP clients
 		vim.api.nvim_create_user_command("KillDuplicateLSP", function()
 			local all_clients = vim.lsp.get_clients()
 			local by_name_and_root = {}
 			local killed = 0
 
-			-- Group clients by name and root directory
 			for _, client in ipairs(all_clients) do
 				local key = string.format("%s:%s", client.name, client.config.root_dir or "none")
 				by_name_and_root[key] = by_name_and_root[key] or {}
 				table.insert(by_name_and_root[key], client)
 			end
 
-			-- Kill duplicates (keep the first one)
 			for _, clients in pairs(by_name_and_root) do
 				if #clients > 1 then
-					print(string.format("🔫 Found %d duplicate %s clients", #clients, clients[1].name))
-					-- Keep the first client, kill the rest
+					vim.notify(
+						string.format("Found %d duplicate %s clients", #clients, clients[1].name),
+						vim.log.levels.WARN
+					)
 					for i = 2, #clients do
-						local client = clients[i]
-						print(string.format("   Killing client ID: %d", client.id))
-						client:stop(true)
+						clients[i]:stop(true)
 						killed = killed + 1
 					end
 				end
 			end
 
 			if killed > 0 then
-				print(string.format("✅ Killed %d duplicate LSP clients", killed))
-				print("💡 Restart Neovim to ensure clean state, or run :LspRestart")
+				vim.notify(
+					string.format("Killed %d duplicate LSP clients. Run :lsp restart to restore clean state.", killed),
+					vim.log.levels.INFO
+				)
 			else
-				print("✅ No duplicate LSP clients found")
+				vim.notify("No duplicate LSP clients found", vim.log.levels.INFO)
 			end
 		end, { desc = "Kill duplicate LSP client instances" })
 
-		-- Command to check for duplicate LSP clients
 		vim.api.nvim_create_user_command("CheckDuplicateLSP", function()
 			local all_clients = vim.lsp.get_clients()
 			local by_name = {}
@@ -365,45 +252,50 @@ return {
 				table.insert(by_name[client.name], client)
 			end
 
-			print("=== DUPLICATE LSP CHECK ===")
+			local lines = { "=== DUPLICATE LSP CHECK ===" }
 			for name, clients in pairs(by_name) do
 				if #clients > 1 then
-					print(string.format("🚨 MULTIPLE %s instances found:", name))
+					table.insert(lines, string.format("MULTIPLE %s instances found:", name))
 					for _, client in ipairs(clients) do
-						print(string.format("  ID: %d, Root: %s", client.id, client.config.root_dir or "none"))
+						table.insert(
+							lines,
+							string.format("  ID: %d, Root: %s", client.id, client.config.root_dir or "none")
+						)
 					end
 				else
-					print(string.format("✅ %s: 1 instance", name))
+					table.insert(lines, string.format("OK: %s (1 instance)", name))
 				end
 			end
+
+			vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
 		end, { desc = "Check for duplicate LSP client instances" })
 
-		-- Command to check LSP client information
 		vim.api.nvim_create_user_command("LspClientInfo", function()
 			local bufnr = vim.api.nvim_get_current_buf()
 			local clients = vim.lsp.get_clients({ bufnr = bufnr })
-
-			print("=== LSP CLIENT INFO ===")
-			print(string.format("Buffer: %d", bufnr))
-			print(string.format("Active clients: %d", #clients))
+			local lines = {
+				"=== LSP CLIENT INFO ===",
+				string.format("Buffer: %d | Active clients: %d", bufnr, #clients),
+			}
 
 			for _, client in ipairs(clients) do
-				print(string.format("Client: %s (ID: %d)", client.name, client.id))
-				print(string.format("  Root dir: %s", client.config.root_dir or "none"))
-				print(string.format("  Cmd: %s", vim.inspect(client.config.cmd)))
-				print(string.format("  Namespace: %d", vim.lsp.diagnostic.get_namespace(client.id)))
-				print("")
+				table.insert(
+					lines,
+					string.format("  %s (ID: %d) | Root: %s", client.name, client.id, client.config.root_dir or "none")
+				)
 			end
-		end, { desc = "Show LSP client information" })
 
-		-- Standard LSP status command
+			vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
+		end, { desc = "Show LSP client information for current buffer" })
+
 		vim.api.nvim_create_user_command("LspStatus", function()
 			local clients = vim.lsp.get_clients()
 			if #clients == 0 then
-				print("No active LSP clients")
+				vim.notify("No active LSP clients", vim.log.levels.WARN)
 				return
 			end
 
+			local lines = {}
 			for _, client in ipairs(clients) do
 				if type(client) == "table" and client.name then
 					local buffers = {}
@@ -412,17 +304,19 @@ return {
 							table.insert(buffers, tostring(buf))
 						end
 					end
-
-					print(
+					table.insert(
+						lines,
 						string.format(
-							"LSP %s (id: %s) attached to buffers: %s",
-							tostring(client.name),
-							tostring(client.id),
+							"%s (id: %d) → buffers: [%s]",
+							client.name,
+							client.id,
 							table.concat(buffers, ", ")
 						)
 					)
 				end
 			end
+
+			vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO)
 		end, { desc = "Show LSP status" })
 	end,
 }

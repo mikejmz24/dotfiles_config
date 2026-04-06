@@ -16,6 +16,7 @@ return {
 			{ "<leader>r", group = "rename/restart" },
 			{ "<leader>y", group = "yank" },
 			{ "<leader>x", group = "trouble/diagnostics" }, -- added from trouble.lua review
+			{ "<leader>t", group = "toggle" },
 			{ "<leader>c", group = "code actions" }, -- added: <leader>ca from lspconfig
 			{ "g", group = "goto" },
 			{ "]", group = "next" },
