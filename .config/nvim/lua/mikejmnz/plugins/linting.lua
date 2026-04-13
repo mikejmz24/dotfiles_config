@@ -4,9 +4,53 @@ return {
 	event = { "BufReadPre", "BufNewFile" },
 	config = function()
 		local lint = require("lint")
+		local api = vim.api
+		local fn = vim.fn
+		local uv = vim.uv or vim.loop
+		local diag_severity = vim.diagnostic.severity
 
-		-- Pre-compute config path once at load time (avoid repeated stdpath calls)
-		local sqlfluff_config = vim.fn.stdpath("config") .. "/.sqlfluff"
+		-- Pre-compute config path once at load time
+		local sqlfluff_config = fn.stdpath("config") .. "/.sqlfluff"
+
+		-- Cache resolved pylint command per project root
+		local pylint_cmd_cache = {}
+
+		local sqlfluff_severity_map = {
+			warning = diag_severity.WARN,
+			error = diag_severity.ERROR,
+		}
+
+		local function resolve_pylint_cmd()
+			local root = vim.fs.root(0, { "pyproject.toml", "setup.py", ".venv" })
+			if not root then
+				return "pylint"
+			end
+
+			local cached = pylint_cmd_cache[root]
+			if cached then
+				return cached
+			end
+
+			local venv_pylint = root .. "/.venv/bin/pylint"
+			local venv_python = root .. "/.venv/bin/python"
+
+			local cmd
+			if fn.executable(venv_pylint) == 1 and fn.executable(venv_python) == 1 then
+				cmd = venv_pylint
+			else
+				cmd = "pylint"
+			end
+
+			pylint_cmd_cache[root] = cmd
+			return cmd
+		end
+
+		-- nvim-lint supports function-valued cmd at runtime, but some Lua LS
+		-- typings declare cmd as string only.
+		if lint.linters.pylint then
+			---@diagnostic disable-next-line: assign-type-mismatch
+			lint.linters.pylint.cmd = resolve_pylint_cmd
+		end
 
 		-- Custom sqlfluff linter definition
 		-- dialect removed from args: controlled by .sqlfluff config file per-project
@@ -25,30 +69,27 @@ return {
 			stream = "stdout",
 			ignore_exitcode = true,
 			parser = function(output)
-				local diagnostics = {}
 				if not output or output == "" then
-					return diagnostics
+					return {}
 				end
 
-				local severity_map = {
-					warning = vim.diagnostic.severity.WARN,
-					error = vim.diagnostic.severity.ERROR,
-				}
-
 				local ok, decoded = pcall(vim.json.decode, output)
-				if ok and decoded and decoded[1] and decoded[1].violations then
-					for _, v in ipairs(decoded[1].violations) do
-						if v.start_line_no and v.start_line_pos then
-							table.insert(diagnostics, {
-								lnum = v.start_line_no - 1,
-								col = v.start_line_pos - 1,
-								end_lnum = v.end_line_no and (v.end_line_no - 1) or nil,
-								end_col = v.end_line_pos and (v.end_line_pos - 1) or nil,
-								message = string.format("[%s] %s", v.code, v.description),
-								severity = severity_map[v.severity] or vim.diagnostic.severity.WARN,
-								source = "sqlfluff",
-							})
-						end
+				if not (ok and decoded and decoded[1] and decoded[1].violations) then
+					return {}
+				end
+
+				local diagnostics = {}
+				for _, v in ipairs(decoded[1].violations) do
+					if v.start_line_no and v.start_line_pos then
+						diagnostics[#diagnostics + 1] = {
+							lnum = v.start_line_no - 1,
+							col = v.start_line_pos - 1,
+							end_lnum = v.end_line_no and (v.end_line_no - 1) or nil,
+							end_col = v.end_line_pos and (v.end_line_pos - 1) or nil,
+							message = string.format("[%s] %s", v.code, v.description),
+							severity = sqlfluff_severity_map[v.severity] or diag_severity.WARN,
+							source = "sqlfluff",
+						}
 					end
 				end
 				return diagnostics
@@ -69,7 +110,7 @@ return {
 				"--show-stats=false",
 				-- Pass the directory of the current file as the target
 				function()
-					return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":h")
+					return fn.fnamemodify(api.nvim_buf_get_name(0), ":h")
 				end,
 			},
 			stdin = false,
@@ -92,32 +133,75 @@ return {
 			["_"] = {}, -- prevent fallback for unknown filetypes
 		}
 
-		-- Helper: only run try_lint() if the current filetype has linters configured.
-		-- Avoids unnecessary overhead on filetypes with no linters.
-		local function lint_if_configured()
-			local ft = vim.bo.filetype
+		-- Only run try_lint() if the current filetype has linters configured.
+		local function lint_if_configured(bufnr)
+			bufnr = bufnr or api.nvim_get_current_buf()
+			local ft = vim.bo[bufnr].filetype
 			local linters = lint.linters_by_ft[ft]
 			if linters and #linters > 0 then
 				lint.try_lint()
 			end
 		end
 
-		local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
+		local lint_augroup = api.nvim_create_augroup("lint", { clear = true })
 
-		-- Lint after save only (BufReadPost removed: caused latency on file open
-		-- before LSP had a chance to attach and render its own diagnostics first).
+		-- Lint after save only
 		vim.api.nvim_create_autocmd("BufWritePost", {
 			group = lint_augroup,
-			callback = lint_if_configured,
+			callback = function(args)
+				lint_if_configured(args.buf)
+			end,
 		})
 
-		-- Lint after leaving insert mode with a generous debounce.
-		-- 500ms was too short for pylint (1-3s) and sqlfluff (2-5s).
-		-- The debounce delays the *start* of the run, not the completion.
+		-- Lint after leaving insert mode with a single timer per buffer.
+		-- This avoids stacking multiple deferred callbacks if InsertLeave fires
+		-- repeatedly within the debounce window.
+		local insertleave_timers = {}
+
 		vim.api.nvim_create_autocmd("InsertLeave", {
 			group = lint_augroup,
-			callback = function()
-				vim.defer_fn(lint_if_configured, 1000)
+			callback = function(args)
+				local bufnr = args.buf
+				local old_timer = insertleave_timers[bufnr]
+
+				if old_timer then
+					old_timer:stop()
+					if not old_timer:is_closing() then
+						old_timer:close()
+					end
+				end
+
+				local new_timer = assert(uv.new_timer())
+				insertleave_timers[bufnr] = new_timer
+
+				new_timer:start(
+					1000,
+					0,
+					vim.schedule_wrap(function()
+						if not new_timer:is_closing() then
+							new_timer:close()
+						end
+						insertleave_timers[bufnr] = nil
+
+						if api.nvim_buf_is_valid(bufnr) then
+							lint_if_configured(bufnr)
+						end
+					end)
+				)
+			end,
+		})
+
+		vim.api.nvim_create_autocmd("BufWipeout", {
+			group = lint_augroup,
+			callback = function(args)
+				local timer = insertleave_timers[args.buf]
+				if timer then
+					timer:stop()
+					if not timer:is_closing() then
+						timer:close()
+					end
+					insertleave_timers[args.buf] = nil
+				end
 			end,
 		})
 

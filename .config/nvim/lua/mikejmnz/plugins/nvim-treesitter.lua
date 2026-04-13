@@ -11,9 +11,15 @@ return {
 			local treesitter = require("nvim-treesitter.configs")
 
 			treesitter.setup({
-				highlight = { enable = true },
+				highlight = {
+					enable = true,
+					disable = { "markdown", "markdown_inline" }, -- use Neovim 0.12 built-in
+				},
 				indent = { enable = true },
-
+				modules = {},
+				sync_install = false,
+				ignore_install = { "markdown", "markdown_inline" },
+				auto_install = false,
 				ensure_installed = {
 					"html",
 					"css",
