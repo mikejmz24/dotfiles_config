@@ -5,6 +5,7 @@ require("mikejmnz.core")
 vim.filetype.add({
 	extension = {
 		templ = "templ",
+		feature = "cucumber",
 	},
 })
 

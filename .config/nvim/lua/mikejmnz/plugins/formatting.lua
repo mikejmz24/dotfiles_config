@@ -47,7 +47,7 @@ return {
 				mysql = { "sqlfluff" },
 				postgresql = { "sqlfluff" },
 				tex = { "latexindent" },
-				-- python = { "isort", "black" }, -- uncomment when needed
+				python = { "isort", "black" }, -- uncomment when needed
 			},
 
 			-- format_after_save: async, runs after the buffer is written.
