@@ -25,4 +25,5 @@ mouse-hide-while-typing        = true
 theme                          = Challenger Deep
 background-opacity	           = 0.92
 window-vsync                   = true
-
+selection-background = #2a3b5f
+selection-foreground = cell-foreground
