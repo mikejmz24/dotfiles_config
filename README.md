@@ -33,7 +33,8 @@ This README is written for two audiences:
 ```
 dotfiles_config/
 ├── README.md                               # This file — read before anything else
-├── linux-gnome-settings.sh                 # Linux-only: run after fresh Ubuntu install
+├── install-linux.sh                        # Linux full setup script (run once on fresh install)
+├── linux-gnome-settings.sh                 # Linux-only: GNOME customizations
 ├── dot_gitconfig                           # → ~/.gitconfig (both platforms)
 ├── dot_zshrc                               # → ~/.zshrc (both platforms)
 └── dot_config/
@@ -42,40 +43,40 @@ dotfiles_config/
     └── nvim/                               # → ~/.config/nvim/ (both platforms)
         ├── init.lua
         ├── lazy-lock.json                  # IMPORTANT: never run :Lazy update blindly
-        ├── dot_sqlfluff                    # sqlfluff config
+        ├── dot_sqlfluff                    # sqlfluff formatter config
         ├── dot_sqls/
-        │   └── config.yml                  # sqls database config
+        │   └── config.yml                  # sqls database connection config
         └── lua/
             └── mikejmnz/
                 ├── core/
-                │   ├── autocmds.lua
-                │   ├── init.lua
-                │   ├── keymaps.lua
-                │   └── options.lua
-                ├── lazy.lua                # lazy.nvim bootstrap
+                │   ├── autocmds.lua        # Auto commands (format on save, etc.)
+                │   ├── init.lua            # Core module entry point
+                │   ├── keymaps.lua         # Custom keybindings
+                │   └── options.lua         # Neovim options (clipboard, tabs, etc.)
+                ├── lazy.lua                # lazy.nvim bootstrap and plugin loader
                 └── plugins/
-                    ├── colorscheme.lua     # tokyonight
-                    ├── comment.lua
-                    ├── cucumber.lua
-                    ├── formatting.lua      # conform.nvim
-                    ├── init.lua
-                    ├── lazydev.lua
-                    ├── linting.lua         # nvim-lint
+                    ├── colorscheme.lua     # tokyonight theme
+                    ├── comment.lua         # gcc/gbc to comment lines/blocks
+                    ├── cucumber.lua        # Cucumber/Gherkin syntax support
+                    ├── formatting.lua      # conform.nvim — format on save
+                    ├── init.lua            # Plugin module entry point
+                    ├── lazydev.lua         # Lua LSP improvements for nvim config editing
+                    ├── linting.lua         # nvim-lint — async linting
                     ├── lsp/
-                    │   ├── lspconfig.lua
-                    │   └── mason.lua
-                    ├── lualine.lua
-                    ├── mini-icons.lua
-                    ├── nvim-autopairs.lua
-                    ├── nvim-cmp.lua
+                    │   ├── lspconfig.lua   # LSP server configurations
+                    │   └── mason.lua       # Mason + mason-tool-installer setup
+                    ├── lualine.lua         # Status line
+                    ├── mini-icons.lua      # File type icons
+                    ├── nvim-autopairs.lua  # Auto-close brackets, quotes, etc.
+                    ├── nvim-cmp.lua        # Autocompletion engine
                     ├── nvim-treesitter-text-objects.lua
-                    ├── nvim-treesitter.lua
-                    ├── oil.lua
-                    ├── surround.lua
-                    ├── telescope.lua
-                    ├── todo-comments.lua
-                    ├── trouble.lua
-                    └── which-key.lua
+                    ├── nvim-treesitter.lua # Syntax highlighting (pinned to master)
+                    ├── oil.lua             # File explorer as a buffer
+                    ├── surround.lua        # Add/change/delete surrounding pairs
+                    ├── telescope.lua       # Fuzzy finder
+                    ├── todo-comments.lua   # Highlight TODO/FIXME/NOTE comments
+                    ├── trouble.lua         # Diagnostics panel
+                    └── which-key.lua       # Keybinding hints popup
 ```
 
 ---
@@ -87,8 +88,87 @@ dotfiles_config/
 | `Brewfile`    | Mac-only, managed separately via Homebrew          |
 | SSH keys      | Never commit keys — generate fresh on each machine |
 | Credentials   | Never store credentials in dotfiles                |
-| `.oh-my-zsh/` | Installed separately, not a dotfile                |
+| `.oh-my-zsh/` | Installed separately by its own installer          |
 | Nerd Fonts    | Installed via Homebrew (Mac) or curl (Linux)       |
+
+---
+
+## Tools Reference
+
+Every tool in this setup — what it does, why it's here, and important notes.
+
+### Shell & Terminal
+
+| Tool          | What It Does                      | Why We Use It                                                                                                   |
+| ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **zsh**       | Shell that replaces bash          | More features, better completion, required by Oh My Zsh                                                         |
+| **Oh My Zsh** | Zsh configuration framework       | Manages zsh config, provides robbyrussell theme and git plugin                                                  |
+| **Ghostty**   | GPU-accelerated terminal emulator | Fast, cross-platform (Mac+Linux), excellent font rendering, built-in shell integration, verified Snap publisher |
+
+### File & Search Utilities
+
+| Tool         | Command | What It Does                                     | Why We Use It                                                                                                                                    |
+| ------------ | ------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ripgrep**  | `rg`    | Searches file contents extremely fast            | Required by Telescope (nvim) for live grep. Much faster than grep.                                                                               |
+| **fd**       | `fd`    | Finds files by name extremely fast               | Required by Telescope for extended file finding. Much faster than `find`. On Ubuntu installed as `fdfind` — symlinked to `fd` in `~/.local/bin`. |
+| **tree**     | `tree`  | Shows directory structure as a visual tree       | Useful for understanding project layouts at a glance.                                                                                            |
+| **jq**       | `jq`    | Processes and queries JSON from the command line | Required by jq-lsp in Neovim. Also useful for inspecting API responses.                                                                          |
+| **xz-utils** | `xz`    | Compresses/decompresses .xz and .tar.xz files    | Needed when extracting downloaded software. Pre-installed on Ubuntu but set to manual.                                                           |
+
+### Development Runtimes
+
+| Tool             | What It Does                       | Why We Use It                                                                 |
+| ---------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| **Go**           | Go programming language runtime    | Required by Mason LSPs: gopls, gofumpt, goimports, gomodifytags, sqls, jq-lsp |
+| **Node.js**      | JavaScript runtime                 | Required by Mason LSPs: html-lsp, css-lsp, htmx-lsp, prettier, pyright        |
+| **npm**          | Node package manager               | Installed alongside Node.js. Used by Mason internally for JS-based tools.     |
+| **Python 3**     | Python interpreter                 | Required by Mason tools: pyright, black, isort, pylint, sqlfluff              |
+| **pip**          | Python package installer           | Used to install Python-based Neovim tools                                     |
+| **python3-venv** | Python virtual environment support | Required by Mason's Python tooling                                            |
+
+### Clipboard & System
+
+| Tool             | What It Does                                  | Why We Use It                                                                                                                                     |
+| ---------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **wl-clipboard** | Wayland clipboard provider (wl-copy/wl-paste) | Required for Neovim clipboard on Wayland. Without this, yanking in nvim doesn't reach the system clipboard. Verified via `:checkhealth provider`. |
+
+### Dotfile Management
+
+| Tool        | What It Does                              | Why We Use It                                                                                                                                                                   |
+| ----------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **chezmoi** | Manages dotfiles across multiple machines | Single command to deploy all configs on a new machine. Handles cross-platform differences. Tracks everything in git. On Linux installs to `~/bin/` — must add to PATH manually. |
+
+### Neovim LSPs (via Mason)
+
+| LSP                   | Language | Runtime | What It Does                                                                  |
+| --------------------- | -------- | ------- | ----------------------------------------------------------------------------- |
+| `lua-language-server` | Lua      | bundled | Autocomplete, diagnostics, hover docs for Lua (used when editing nvim config) |
+| `pyright`             | Python   | Node.js | Type checking, autocomplete, go-to-definition for Python                      |
+| `gopls`               | Go       | Go      | Full Go language support                                                      |
+| `html-lsp`            | HTML     | Node.js | HTML completion and validation                                                |
+| `css-lsp`             | CSS      | Node.js | CSS completion and validation                                                 |
+| `htmx-lsp`            | HTMX     | Go      | HTMX attribute completion                                                     |
+| `jq-lsp`              | jq       | Go      | jq query completion                                                           |
+| `sqls`                | SQL      | Go      | SQL completion with database connection support                               |
+
+### Neovim Formatters (conform.nvim)
+
+| Formatter   | Language    | What It Does                             |
+| ----------- | ----------- | ---------------------------------------- |
+| `stylua`    | Lua         | Opinionated Lua code formatter           |
+| `black`     | Python      | Opinionated Python formatter (PEP 8)     |
+| `isort`     | Python      | Sorts Python import statements           |
+| `prettier`  | HTML/CSS/MD | Multi-language formatter                 |
+| `gofumpt`   | Go          | Stricter Go formatter                    |
+| `goimports` | Go          | Formats Go and manages import statements |
+| `sqlfluff`  | SQL         | SQL linter and formatter                 |
+
+### Neovim Linters (nvim-lint)
+
+| Linter     | Language | What It Does                               |
+| ---------- | -------- | ------------------------------------------ |
+| `pylint`   | Python   | Comprehensive Python static analysis       |
+| `sqlfluff` | SQL      | SQL linting (also used as formatter above) |
 
 ---
 
@@ -104,7 +184,7 @@ dotfiles_config/
 brew install chezmoi
 
 # 3. Install core tools
-brew install git neovim ripgrep tree xz pyright
+brew install git neovim ripgrep tree xz fd jq go node python@3.12
 brew install --cask ghostty
 
 # 4. Install Oh My Zsh
@@ -117,72 +197,32 @@ brew install --cask font-hack-nerd-font
 chezmoi init git@github.com:mikejmz24/dotfiles_config.git
 chezmoi apply
 
-# 7. Set up SSH key for GitHub (see SSH Setup section below)
+# 7. Install Python tools for Neovim
+pip install pynvim pyright black isort pylint sqlfluff
+
+# 8. Set up SSH key for GitHub (see SSH Setup section below)
 ```
 
 ### Linux (Ubuntu 24.04 / System76 Darter Pro)
 
+Run the included install script — it handles everything in the correct order:
+
 ```bash
-# 1. Install core tools
-sudo apt install -y git curl zsh xz-utils ripgrep tree jq golang \
-  nodejs npm python3 python3-pip python3-venv wl-clipboard fd-find
+# Clone repo first (before chezmoi is installed)
+git clone https://github.com/mikejmz24/dotfiles_config.git ~/dotfiles_config
 
-# 2. Make fd available system-wide (Ubuntu names it fdfind)
-mkdir -p ~/.local/bin
-ln -s $(which fdfind) ~/.local/bin/fd
-
-# 3. Install Ghostty via Snap
-sudo snap install ghostty --classic
-
-# 4. Install Neovim via Snap
-sudo snap install nvim --classic
-
-# 5. Install Oh My Zsh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-# 6. Set Zsh as default shell (requires logout/login to take effect)
-chsh -s $(which zsh)
-
-# 7. Install chezmoi
-sh -c "$(curl -fsLS get.chezmoi.io)"
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-
-# 8. Install Hack Nerd Font manually
-mkdir -p ~/.local/share/fonts
-curl -fLo ~/.local/share/fonts/HackNerdFont-Regular.ttf \
-  https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/Hack/Regular/HackNerdFont-Regular.ttf
-curl -fLo ~/.local/share/fonts/HackNerdFont-Bold.ttf \
-  https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/Hack/Bold/HackNerdFont-Bold.ttf
-curl -fLo ~/.local/share/fonts/HackNerdFont-Italic.ttf \
-  https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/Hack/Italic/HackNerdFont-Italic.ttf
-curl -fLo ~/.local/share/fonts/HackNerdFont-BoldItalic.ttf \
-  https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/Hack/BoldItalic/HackNerdFont-BoldItalic.ttf
-fc-cache -fv
-
-# 9. Apply dotfiles
-chezmoi init git@github.com:mikejmz24/dotfiles_config.git
-chezmoi apply
-
-# 10. Apply GNOME settings
-bash ~/dotfiles_config/linux-gnome-settings.sh
-
-# 11. Set Ghostty as default terminal
-gsettings set org.gnome.desktop.default-applications.terminal exec 'ghostty'
-sudo update-alternatives --install /usr/bin/x-terminal-emulator \
-  x-terminal-emulator $(which ghostty) 50
-
-# 12. Install Python tools for Neovim
-pip install pyright black isort pylint sqlfluff pynvim --break-system-packages
-
-# 13. Set up SSH key for GitHub (see SSH Setup section below)
+# Run the full setup script
+bash ~/dotfiles_config/install-linux.sh
 ```
+
+See `install-linux.sh` for full details with explanations of every step and
+the reasoning behind the install order.
 
 ---
 
 ## SSH Setup (Both Platforms)
 
-Run this on every new machine. Never copy SSH keys between machines.
+Run on every new machine. Never copy SSH keys between machines.
 
 ```bash
 # Generate key using GitHub no-reply email
@@ -197,7 +237,7 @@ cat ~/.ssh/id_ed25519.pub
 ```
 
 Go to **GitHub → Settings → SSH and GPG keys → New SSH key**, paste the
-public key, and name it something descriptive (e.g. `Darter Pro Ubuntu` or `MacBook Pro`).
+public key, and name it something descriptive (e.g. `Darter Pro Ubuntu`).
 
 Test the connection:
 
@@ -206,8 +246,9 @@ ssh -T git@github.com
 # Expected: Hi mikejmz24! You've successfully authenticated.
 ```
 
-> **First connection:** SSH will ask you to verify GitHub's fingerprint.
-> Type `yes` — this is expected and only happens once per machine.
+> **First connection:** Type `yes` when asked to verify GitHub's fingerprint.
+> This is expected and only happens once per machine.
+> GitHub's fingerprint: `SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU`
 
 ---
 
@@ -216,16 +257,11 @@ ssh -T git@github.com
 ### After making changes on any machine
 
 ```bash
-# Add new or changed files to chezmoi
-chezmoi add ~/.config/ghostty/config
-chezmoi add ~/.zshrc
-# etc.
+# Stage changes
+chezmoi add ~/.config/ghostty/config  # or whichever file changed
 
-# Review what changed
-chezmoi diff
-
-# Commit and push via chezmoi's git wrapper
-chezmoi cd
+# Commit and push
+cd ~/.local/share/chezmoi
 git add -A
 git commit -m "describe your change"
 git push
@@ -237,20 +273,16 @@ git push
 chezmoi update
 ```
 
-This pulls from GitHub and applies changes in one command.
-
 ---
 
-## Tool Details
+## Ghostty Configuration
 
-### Ghostty Terminal
-
-- **Config location:** `~/.config/ghostty/config`
-- **Font:** Hack Nerd Font, size 18
-- **Theme:** Challenger Deep (built into Ghostty, no download needed)
-- **Cursor:** Bar style, blinking, opacity 0.8
-- **Background opacity:** 0.92
-- **Shell integration:** Enabled via `$GHOSTTY_RESOURCES_DIR`
+- **Config:** `~/.config/ghostty/config`
+- **Font:** Hack Nerd Font, size 18, with ligatures (calt, liga, ss13)
+- **Theme:** Challenger Deep (built-in, no download needed)
+- **Cursor:** Bar style, blinking, opacity 0.8, thickness 3
+- **Background:** opacity 0.92
+- **Shell integration:** enabled via `$GHOSTTY_RESOURCES_DIR`
 
 **Copy/Paste keybindings:**
 
@@ -259,140 +291,69 @@ This pulls from GitHub and applies changes in one command.
 | Mac      | ⌘+C          | ⌘+V          | ⌘+A          |
 | Linux    | Ctrl+Shift+C | Ctrl+Shift+V | Ctrl+Shift+A |
 
-> **Why different on Linux?** The Super key (equivalent to ⌘ on Mac) is
-> intercepted by the Wayland compositor (GNOME) before any terminal app can
-> see it. This is a fundamental Wayland/GNOME design decision, not a
-> configuration problem. `Ctrl+Shift+C/V` is the Linux terminal standard
-> and works across all terminals without any configuration.
+> **Why different on Linux?** The Super key is intercepted by the Wayland
+> compositor (GNOME) before any app sees it. This is a fundamental GNOME/Wayland
+> design decision — not a config problem. `Ctrl+Shift+C/V` is the Linux
+> terminal standard and works across all terminals without configuration.
 
-> **Config file name:** Must be named `config`, NOT `config.ghostty`.
-> Ghostty on Linux only reads `~/.config/ghostty/config`.
+> **Config file name:** Must be `config`, NOT `config.ghostty`.
 
 ---
 
-### Neovim
+## Neovim Configuration
 
-- **Config location:** `~/.config/nvim/`
+- **Config:** `~/.config/nvim/`
 - **Plugin manager:** lazy.nvim (auto-bootstraps on first launch)
 - **LSP manager:** Mason
-- **Colorscheme:** tokyonight (loaded at startup)
-- **Version:** 0.12.2 (Snap on Linux, Homebrew on Mac)
-
-**Mason LSPs and their runtime requirements:**
-
-| LSP/Tool    | Language    | Runtime needed |
-| ----------- | ----------- | -------------- |
-| `pyright`   | Python      | Node.js        |
-| `lua-ls`    | Lua         | (bundled)      |
-| `gopls`     | Go          | Go             |
-| `html-lsp`  | HTML        | Node.js        |
-| `css-lsp`   | CSS         | Node.js        |
-| `prettier`  | HTML/CSS/MD | Node.js        |
-| `black`     | Python      | Python + pip   |
-| `isort`     | Python      | Python + pip   |
-| `pylint`    | Python      | Python + pip   |
-| `sqlfluff`  | SQL         | Python + pip   |
-| `stylua`    | Lua         | (binary)       |
-| `gofumpt`   | Go          | Go             |
-| `goimports` | Go          | Go             |
-| `sqls`      | SQL         | Go             |
-| `jq-lsp`    | jq          | Go             |
+- **Version:** 0.12.2 on both platforms
 
 **Critical: nvim-treesitter branch pinning**
 
-`nvim-treesitter` underwent a full breaking rewrite in March 2026, moving
-from `master` to `main` branch with an incompatible API. The plugin was
-archived on April 3, 2026.
-
-Our config pins both treesitter plugins to `master` (the frozen, stable branch)
-using the `branch = "master"` option in the plugin specs. This ensures the
-old `require("nvim-treesitter.configs")` API continues to work.
+`nvim-treesitter` had a full breaking rewrite in March 2026 (master → main
+branch, incompatible API) and was archived April 3, 2026. Our config pins
+both treesitter plugins to `branch = "master"` in the plugin specs.
 
 **Never run `:Lazy update` without checking the treesitter changelog first.**
+
 If treesitter breaks after an update:
 
 ```bash
 rm -rf ~/.local/share/nvim/lazy/nvim-treesitter
 rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
-# Then inside nvim: :Lazy install
+# Inside nvim: :Lazy install
 ```
-
-**Neovim clipboard on Linux:**
-Requires `wl-clipboard` on Wayland. Already installed in the Linux setup above.
-Config uses `opt.clipboard:append("unnamedplus")` which works with `wl-copy`.
 
 ---
 
-### Zsh
+## Zsh Configuration
 
 - **Framework:** Oh My Zsh
-- **Theme:** robbyrussell (matches Mac exactly)
-- **Plugins:** git (minimal, fast startup)
-- **Custom prompt:** `→ %F{cyan}%~%f ` (two-line with cyan path)
-- **ls colors:** `alias ls='ls --color=auto'`
-
-**Ghostty shell integration** (in `.zshrc`):
-
-```bash
-if [ -n "$GHOSTTY_RESOURCES_DIR" ]; then
-  source "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration"
-fi
-```
-
-> **Note on $SHELL:** After installing Zsh and running `chsh`, the `$SHELL`
-> variable may still show `/bin/bash` until you fully log out and back in.
-> This is expected. Run `echo $0` to confirm Zsh is actually active — the
-> prompt will show `%` instead of `$`.
-
----
-
-### Git
-
-- **Config location:** `~/.gitconfig`
-- **Email:** GitHub no-reply address (privacy best practice)
-- **Credential storage:** SSH keys (no passwords needed)
+- **Theme:** robbyrussell (identical on Mac and Linux)
+- **Plugins:** git
+- **Prompt:** `→ %F{cyan}%~%f ` (two-line, cyan path)
+- **PATH:** `$HOME/bin` (chezmoi), `$HOME/.local/bin` (fd symlink on Linux)
 
 ---
 
 ## Linux-Specific: GNOME Settings
 
-The `linux-gnome-settings.sh` script documents and applies all GNOME
-customizations. Run it after a fresh Ubuntu install:
+`linux-gnome-settings.sh` documents and applies all GNOME customizations.
 
-```bash
-bash ~/dotfiles_config/linux-gnome-settings.sh
-```
+**Current settings:**
 
-**What it does:**
+- Frees `Super+A` from GNOME app drawer
+- Frees `Super+V` from GNOME message tray
+- Sets GNOME Terminal copy/paste keybindings
 
-- Frees `Super+A` from GNOME app drawer (toggle-application-view)
-- Frees `Super+V` from GNOME message tray (toggle-message-tray)
-- Sets GNOME Terminal keybindings for copy/paste
+**Pending — App Launcher (System76 PPA outage):**
+`pop-launcher` is the correct Spotlight-like launcher for GNOME Wayland.
+Rofi, Fuzzel, and Ulauncher all fail with `no layer shell interface` on GNOME.
 
-**App Launcher (pending):**
-The System76 PPA (`ppa:system76-dev/stable`) provides `pop-launcher`,
-a GNOME Wayland-native Spotlight-like launcher designed for System76 hardware.
-It was unavailable during initial setup due to a PPA outage.
-
-Once the PPA is back online:
+When PPA is back:
 
 ```bash
 sudo apt update && sudo apt install pop-launcher
 ```
-
-Then bind it to `Super+Space` by adding to `linux-gnome-settings.sh`:
-
-```bash
-gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:\
-/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ \
-command 'pop-launcher'
-```
-
-> **Why not Rofi, Fuzzel, or Ulauncher?**
-> All three were attempted and failed on GNOME Wayland due to the
-> `no layer shell interface` error. They require XWayland or a non-GNOME
-> Wayland compositor. `pop-launcher` is the only option that integrates
-> natively with GNOME Shell on Wayland.
 
 ---
 
@@ -403,14 +364,14 @@ command 'pop-launcher'
 | Copy in terminal   | ⌘+C                           | Ctrl+Shift+C                           |
 | Paste in terminal  | ⌘+V                           | Ctrl+Shift+V                           |
 | Select all         | ⌘+A                           | Ctrl+Shift+A                           |
-| App launcher       | Spotlight (⌘+Space)           | Super key (pending pop-launcher)       |
-| Clipboard provider | Native                        | wl-clipboard (Wayland)                 |
-| Font install       | `brew install --cask`         | Manual curl to `~/.local/share/fonts`  |
+| App launcher       | Spotlight (⌘+Space)           | Super key (pop-launcher pending)       |
+| Clipboard provider | Native                        | wl-clipboard                           |
+| Font install       | `brew install --cask`         | curl to `~/.local/share/fonts`         |
 | Neovim install     | `brew install neovim`         | `snap install nvim --classic`          |
 | Ghostty install    | `brew install --cask ghostty` | `snap install ghostty --classic`       |
 | chezmoi install    | `brew install chezmoi`        | `sh -c "$(curl -fsLS get.chezmoi.io)"` |
-| chezmoi PATH       | Auto                          | Add `$HOME/bin` to `$PATH` manually    |
-| iTerm2 integration | `.zshrc` line present         | Line ignored (no-op on Linux)          |
+| chezmoi PATH       | Automatic                     | Add `$HOME/bin` manually               |
+| fd binary name     | `fd`                          | `fdfind` → symlinked to `fd`           |
 
 ---
 
@@ -419,13 +380,10 @@ command 'pop-launcher'
 ### chezmoi not found after install on Linux
 
 ```bash
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
 ```
 
 ### Neovim Treesitter errors (`no file 'nvim-treesitter/configs.lua'`)
-
-The plugin pulled from `main` instead of `master`. Fix:
 
 ```bash
 rm -rf ~/.local/share/nvim/lazy/nvim-treesitter
@@ -435,15 +393,9 @@ rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
 
 ### Mason LSPs failing to install
 
-Run `:checkhealth` inside Neovim. Each LSP needs its runtime:
+Run `:checkhealth` — each LSP needs its runtime (Node/Go/Python).
 
-- `html-lsp`, `css-lsp`, `prettier` → need Node.js
-- `gopls`, `gofumpt`, `goimports` → need Go
-- `pyright`, `black`, `isort`, `pylint` → need Python + pip
-
-### Ghostty theme not loading
-
-Config file must be named `config`, not `config.ghostty`:
+### Ghostty wrong config file name
 
 ```bash
 mv ~/.config/ghostty/config.ghostty ~/.config/ghostty/config
@@ -451,34 +403,33 @@ mv ~/.config/ghostty/config.ghostty ~/.config/ghostty/config
 
 ### Zsh shows `/bin/bash` for `$SHELL`
 
-Expected until full desktop logout/login. Run `echo $0` to confirm
-Zsh is active. The prompt changing from `$` to `%` also confirms it.
+Expected until logout/login. Run `echo $0` to confirm Zsh is active.
 
-### Clipboard not working in Neovim on Linux
+### Clipboard not working in Neovim
 
 ```bash
 sudo apt install wl-clipboard
 # Inside nvim: :checkhealth provider
-# Should show: Clipboard tool found: wl-copy
 ```
 
-### SSH GitHub connection prompt on first use
+### fd not found by Telescope
 
-Type `yes` when asked about GitHub's fingerprint. This is expected
-and only happens once per machine.
+```bash
+mkdir -p ~/.local/bin && ln -s $(which fdfind) ~/.local/bin/fd
+```
 
 ### System76 PPA unavailable
 
-The `ppa.launchpadcontent.net` server may be temporarily down.
-This affects System76-specific packages. Use `sudo apt update` to check
-if it's back online before retrying any System76 package installs.
+```bash
+sudo apt update 2>&1 | grep system76  # check if back online
+```
 
 ---
 
 ## Hardware
 
 - **Mac:** MacBook (ARM, Apple Silicon)
-- **Linux:** System76 Darter Pro, Ubuntu 24.04 LTS, Wayland/GNOME
+- **Linux:** System76 Darter Pro, Ubuntu 24.04 LTS, GNOME/Wayland
 
 ---
 
@@ -490,5 +441,6 @@ if it's back online before retrying any System76 package installs.
 - [Oh My Zsh](https://ohmyz.sh/)
 - [Nerd Fonts](https://www.nerdfonts.com/)
 - [System76 Darter Pro](https://system76.com/laptops/darter)
-- [nvim-treesitter archived](https://byteiota.com/nvim-treesitter-archived-13k-star-plugin-shut-down-2026/)
-- [Neovim 0.12 migration guide](https://www.qu8n.com/posts/treesitter-migration-guide-for-nvim-0-12)
+- [nvim-treesitter archived (April 2026)](https://byteiota.com/nvim-treesitter-archived-13k-star-plugin-shut-down-2026/)
+- [Neovim 0.12 treesitter migration](https://www.qu8n.com/posts/treesitter-migration-guide-for-nvim-0-12)
+- [dotfiles.github.io](https://dotfiles.github.io/)
