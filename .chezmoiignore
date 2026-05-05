@@ -1,0 +1,17 @@
+# Work credentials — never commit
+.gitconfig-work
+
+# Mac-only apps we don't manage
+.config/fish/**
+.config/zed/**
+.config/iterm2/**
+.config/uv/**
+.config/gh/hosts.yml
+
+# VSCode — managed separately
+Library/Application Support/Code/User/globalStorage/**
+Library/Application Support/Code/User/workspaceStorage/**
+Library/Application Support/Code/User/History/**
+
+# chezmoi config — machine specific, never committed
+.config/chezmoi/**

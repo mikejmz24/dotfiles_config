@@ -1,7 +1,5 @@
 return {
 	"nvim-treesitter/nvim-treesitter-textobjects",
-	branch = "master",
-	branch = "master",
 	lazy = true,
 	event = { "BufReadPre", "BufNewFile" }, -- fixed: was lazy with no trigger
 	config = function()

@@ -1,0 +1,8 @@
+[user]
+    name = {{ .github_user }}
+    email = {{ .email }}
+
+{{ if eq .os "mac" -}}
+[includeIf "gitdir:~/Documents/work/"]
+    path = ~/.gitconfig-work
+{{- end }}
