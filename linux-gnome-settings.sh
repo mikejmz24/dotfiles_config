@@ -20,3 +20,14 @@
 # =============================================================================
 gsettings set org.gnome.desktop.wm.keybindings maximize "['<Super>Up']"
 gsettings set org.gnome.desktop.wm.keybindings toggle-fullscreen "['<Super>f']"
+
+# =============================================================================
+# DOCK — Completely hidden, never visible
+# ubuntu-dock disabled — falls back to GNOME built-in dash
+# Just Perfection extension used to hide the built-in dash from Activities
+# =============================================================================
+gnome-extensions disable ubuntu-dock@ubuntu.com
+dconf write /org/gnome/shell/extensions/just-perfection/dash false
+dconf write /org/gnome/shell/extensions/just-perfection/dash-app-running false
+dconf write /org/gnome/shell/extensions/just-perfection/dash-separator false
+dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
