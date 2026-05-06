@@ -653,7 +653,10 @@ rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
 
 - **Framework:** Oh My Zsh
 - **Theme:** robbyrussell (identical on Mac and Linux)
-- **Plugins:** git
+- **Plugins:**
+  - `git` — git aliases and prompt info
+  - `zsh-autosuggestions` — shows grey command suggestions from history, press `→` to accept
+  - `zsh-syntax-highlighting` — colors commands green (valid) or red (invalid) as you type
 - **Prompt:** `→ %F{cyan}%~%f `
 - **PATH additions:**
   - `$HOME/bin` — chezmoi (Linux only)
@@ -661,6 +664,17 @@ rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
   - `$HOME/go/bin` — Go tools (both)
   - `/Library/TeX/texbin` — MacTeX (Mac only)
   - `$HOME/.local/share/nvim/mason/bin` — Mason binaries (both)
+
+> **Installing Zsh plugins on a new machine:** Plugins must be cloned into
+> the Oh My Zsh custom plugins directory before `chezmoi apply` so the
+> `.zshrc` plugins array can find them:
+>
+> ```bash
+> git clone https://github.com/zsh-users/zsh-autosuggestions \
+>   ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+> git clone https://github.com/zsh-users/zsh-syntax-highlighting \
+>   ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+> ```
 
 ---
 
@@ -683,23 +697,38 @@ bash ~/dotfiles_config/linux-gnome-settings.sh
   - `Super+Up` — maximize window
   - `Super+F` — true fullscreen (hides everything)
 
-### Auto-hide Top Bar
+### GNOME Extensions
 
-Install **"Hide Top Bar" by tuxor1337** via GNOME Extension Manager:
+Install Extension Manager first:
 
 ```bash
 sudo apt install gnome-shell-extension-manager
 extension-manager &
 ```
 
-Search "hide top bar" → install the one by **tuxor1337** (NOT sonersg).
+**1. Hide Top Bar (tuxor1337)**
+Search "hide top bar" → install by **tuxor1337** (NOT sonersg — no settings).
 
+- Auto-hides top bar when any window is active
 - Shows bar when mouse moves to top edge
-- Hides automatically when any window is active
-- Zero performance impact
+- Zero performance impact — no blur, no animations
 
-> **Why tuxor1337 and not sonersg?** tuxor1337's version has the mouse
-> hover option we need. sonersg's version has no settings at all.
+**2. Just Perfection**
+Search "just perfection" and install.
+Configure via `dconf`:
+
+```bash
+dconf write /org/gnome/shell/extensions/just-perfection/dash false
+dconf write /org/gnome/shell/extensions/just-perfection/dash-app-running false
+dconf write /org/gnome/shell/extensions/just-perfection/dash-separator false
+dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
+```
+
+Required because disabling `ubuntu-dock` falls back to GNOME's built-in dash
+which can only be hidden via this extension. Hides dock from Activities overview.
+
+> **Install extensions BEFORE running `linux-gnome-settings.sh`** — the script
+> uses `dconf` commands that require Just Perfection to be installed first.
 
 ### App Launcher
 
@@ -714,49 +743,93 @@ Search "hide top bar" → install the one by **tuxor1337** (NOT sonersg).
 - **Rofi** — fails with `no layer shell interface` on GNOME Wayland
 - **Fuzzel** — same `no layer shell interface` error
 - **Ulauncher** — not available in Ubuntu repos
-- **pop-launcher** (System76) — moved to COSMIC desktop, no longer in system76-dev PPA
+- **pop-launcher** (System76) — moved to COSMIC desktop, no longer in PPA
 
-> GNOME Activities is good enough for daily use and requires zero configuration.
+### External Monitor
 
-### System76 Driver
+The Darter Pro 11 has **three** video-capable outputs:
+
+- **Built-in HDMI port** — plug monitor directly, works immediately
+- **Thunderbolt 4 USB-C port** (marked ⚡) — supports DisplayPort Alt Mode
+- **Regular USB-C port** — data only, does NOT support video output
+
+> Always use the Thunderbolt 4 port (⚡) for USB-C hubs with HDMI/DisplayPort.
+> The regular USB-C port will not output video even with a compatible hub.
+
+### System76 Driver and Firmware
 
 ```bash
+# Install driver (confirmed hardware as darp11)
 sudo apt install system76-driver
+
+# Check for and schedule firmware updates
+sudo system76-firmware-cli schedule
+# Then reboot — updater runs automatically and boots back to Ubuntu
 ```
 
-Confirmed hardware as `darp11` (Darter Pro 11). Provides better hardware
-integration, power management, and firmware updates.
+Provides hardware integration, power management, keyboard backlight,
+and battery extensions specific to the Darter Pro 11.
 
 ---
 
 ## Known Mac vs Linux Differences
 
-| Feature       | Mac                               | Linux                                  |
-| ------------- | --------------------------------- | -------------------------------------- |
-| Copy          | ⌘+C                               | Ctrl+Shift+C                           |
-| Paste         | ⌘+V                               | Ctrl+Shift+V                           |
-| Select all    | ⌘+A                               | Ctrl+Shift+A                           |
-| Font size     | 18                                | 16                                     |
-| Fullscreen    | F11 / ⌘+F                         | Super+F                                |
-| Maximize      | ⌘+Ctrl+F                          | Super+Up                               |
-| App launcher  | Spotlight (⌘+Space)               | GNOME Activities (Super)               |
-| Clipboard     | Native                            | wl-clipboard                           |
-| Font install  | Brewfile                          | curl to `~/.local/share/fonts`         |
-| Neovim        | `brew install neovim`             | `snap install nvim --classic`          |
-| Ghostty       | Brewfile                          | `snap install ghostty --classic`       |
-| chezmoi       | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"` |
-| chezmoi PATH  | Automatic                         | Add `$HOME/bin` manually               |
-| fd binary     | `fd`                              | `fdfind` → symlinked to `fd`           |
-| SSH keychain  | `UseKeychain yes` (in SSH config) | Not supported — omitted via template   |
-| SSH remotes   | `git@github-personal:...`         | `git@github.com:...`                   |
-| Work identity | `~/.gitconfig-work` (manual)      | Not needed                             |
-| bat           | Available                         | Not installed (Mac only)               |
-| Docker        | Docker Desktop                    | Not installed                          |
-| Top bar       | Native macOS                      | Auto-hidden via Hide Top Bar extension |
+| Feature          | Mac                               | Linux                                          |
+| ---------------- | --------------------------------- | ---------------------------------------------- |
+| Copy             | ⌘+C                               | Ctrl+Shift+C                                   |
+| Paste            | ⌘+V                               | Ctrl+Shift+V                                   |
+| Select all       | ⌘+A                               | Ctrl+Shift+A                                   |
+| Font size        | 18                                | 16                                             |
+| Fullscreen       | F11 / ⌘+F                         | Super+F                                        |
+| Maximize         | ⌘+Ctrl+F                          | Super+Up                                       |
+| App launcher     | Spotlight (⌘+Space)               | GNOME Activities (Super)                       |
+| Clipboard        | Native                            | wl-clipboard                                   |
+| Font install     | Brewfile                          | curl to `~/.local/share/fonts`                 |
+| Neovim           | `brew install neovim`             | `snap install nvim --classic`                  |
+| Ghostty          | Brewfile                          | `snap install ghostty --classic`               |
+| chezmoi          | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"`         |
+| External monitor | Any USB-C/HDMI                    | HDMI port or Thunderbolt 4 (⚡) only           |
+| Zsh plugins      | Installed via Oh My Zsh           | Same — clone to `~/.oh-my-zsh/custom/plugins/` |
+| chezmoi PATH     | Automatic                         | Add `$HOME/bin` manually                       |
+| fd binary        | `fd`                              | `fdfind` → symlinked to `fd`                   |
+| SSH keychain     | `UseKeychain yes` (in SSH config) | Not supported — omitted via template           |
+| SSH remotes      | `git@github-personal:...`         | `git@github.com:...`                           |
+| Work identity    | `~/.gitconfig-work` (manual)      | Not needed                                     |
+| bat              | Available                         | Not installed (Mac only)                       |
+| Docker           | Docker Desktop                    | Not installed                                  |
+| Top bar          | Native macOS                      | Auto-hidden via Hide Top Bar extension         |
 
 ---
 
 ## Troubleshooting
+
+### Zsh plugins not loading (autosuggestions/syntax-highlighting)
+
+Plugins must be cloned before or after `chezmoi apply`:
+
+```bash
+git clone https://github.com/zsh-users/zsh-autosuggestions \
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting \
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+source ~/.zshrc
+echo $plugins  # should show all three plugins
+```
+
+### External monitor not detected on Linux
+
+Only two ports support video on the Darter Pro 11:
+
+- Built-in **HDMI port** — always works, plug directly
+- **Thunderbolt 4 USB-C port** (marked ⚡) — supports DisplayPort Alt Mode
+  The regular USB-C port is data-only — no video output regardless of hub.
+
+### System76 firmware update
+
+```bash
+sudo system76-firmware-cli schedule
+sudo reboot  # updater runs automatically, boots back to Ubuntu
+```
 
 ### chezmoi not found on Linux
 

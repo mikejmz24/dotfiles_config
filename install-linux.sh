@@ -109,7 +109,21 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 echo "✅ Oh My Zsh installed"
 
 # =============================================================================
-# SECTION 5: CHEZMOI
+# SECTION 5: ZSH PLUGINS
+# Must be installed AFTER Oh My Zsh so the custom plugins directory exists.
+# zsh-autosuggestions: grey suggestions from history, press → to accept
+# zsh-syntax-highlighting: colors commands green (valid) or red (invalid)
+# =============================================================================
+
+echo "→ Installing Zsh plugins..."
+git clone https://github.com/zsh-users/zsh-autosuggestions \
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting \
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+echo "✅ Zsh plugins installed"
+
+# =============================================================================
+# SECTION 6: CHEZMOI
 # Dotfile manager. Installed after Zsh so chezmoi can apply .zshrc correctly.
 # Installs to ~/bin/ — we add this to PATH.
 # =============================================================================
@@ -126,7 +140,7 @@ export PATH="$HOME/bin:$PATH"
 echo "✅ chezmoi $(chezmoi --version | head -1) installed"
 
 # =============================================================================
-# SECTION 6: HACK NERD FONT
+# SECTION 7: HACK NERD FONT
 # Must be installed before Ghostty is launched, otherwise Ghostty falls back
 # to a default font and the terminal looks wrong.
 #
@@ -159,7 +173,7 @@ fc-cache -fv
 echo "✅ Hack Nerd Font installed and font cache refreshed"
 
 # =============================================================================
-# SECTION 7: APPLY DOTFILES VIA CHEZMOI
+# SECTION 8: APPLY DOTFILES VIA CHEZMOI
 # This deploys all configs from the GitHub repo to their correct locations:
 # - ~/.config/ghostty/config
 # - ~/.config/nvim/ (full Neovim config)
@@ -173,7 +187,7 @@ chezmoi apply
 echo "✅ Dotfiles applied"
 
 # =============================================================================
-# SECTION 8: PYTHON PACKAGES FOR NEOVIM
+# SECTION 9: PYTHON PACKAGES FOR NEOVIM
 # These must be installed AFTER chezmoi applies the Neovim config,
 # because Mason (Neovim's LSP manager) will try to use them on first launch.
 #
@@ -195,7 +209,7 @@ pip install \
 echo "✅ Python packages installed"
 
 # =============================================================================
-# SECTION 9: GHOSTTY AS DEFAULT TERMINAL
+# SECTION 10: GHOSTTY AS DEFAULT TERMINAL
 # Configures GNOME to use Ghostty when opening a terminal from the file
 # manager (Nautilus) or keyboard shortcut (Ctrl+Alt+T).
 # =============================================================================
@@ -212,7 +226,7 @@ sudo update-alternatives --install \
 echo "✅ Ghostty set as default terminal"
 
 # =============================================================================
-# SECTION 10: GNOME SETTINGS
+# SECTION 11: GNOME SETTINGS
 # Apply all GNOME customizations documented in linux-gnome-settings.sh
 # =============================================================================
 
@@ -221,7 +235,7 @@ bash "$(dirname "$0")/linux-gnome-settings.sh"
 echo "✅ GNOME settings applied"
 
 # =============================================================================
-# SECTION 11: SSH KEY SETUP (MANUAL STEP)
+# SECTION 12: SSH KEY SETUP (MANUAL STEP)
 # SSH keys cannot be automated — they must be generated fresh on each machine
 # and manually added to GitHub. This section prints instructions.
 # =============================================================================
@@ -245,29 +259,34 @@ echo "Test with: ssh -T git@github.com"
 echo ""
 
 # =============================================================================
-# SECTION 12: PENDING ITEMS (requires System76 PPA)
-# These packages require the System76 PPA which was unavailable during
-# initial setup due to a server outage. Check if it's back online with:
-#   sudo apt update 2>&1 | grep system76
-#
-# When available, install:
-#   sudo apt install pop-launcher
-#
-# pop-launcher: Spotlight-like app launcher designed for GNOME Wayland.
-# Built by System76 specifically for their hardware. Bind to Super+Space
-# via linux-gnome-settings.sh.
+# SECTION 13: GNOME EXTENSIONS (MANUAL STEP)
+# Install via: sudo apt install gnome-shell-extension-manager
+# Then open extension-manager and install:
+# 1. "Hide Top Bar" by tuxor1337 (NOT sonersg)
+# 2. "Just Perfection"
+# See README for configuration details.
 # =============================================================================
 
-echo "============================================="
-echo " PENDING: System76 PPA packages"
-echo "============================================="
 echo ""
-echo "Check if System76 PPA is back online:"
-echo "  sudo apt update 2>&1 | grep system76"
+echo "MANUAL STEP: Install GNOME extensions via Extension Manager"
+echo "  sudo apt install gnome-shell-extension-manager"
+echo "  extension-manager &"
+echo "  Install: 'Hide Top Bar' by tuxor1337 and 'Just Perfection'"
 echo ""
-echo "If available, install:"
-echo "  sudo apt install pop-launcher"
-echo ""
+
+# =============================================================================
+# SECTION 14: SYSTEM76 DRIVER AND FIRMWARE
+# system76-driver: hardware integration for Darter Pro 11
+# system76-firmware-cli: firmware updates (reboot to apply)
+# =============================================================================
+
+echo "→ Installing System76 driver..."
+sudo apt install -y system76-driver
+echo "✅ System76 driver installed"
+
+echo "→ Checking for firmware updates..."
+sudo system76-firmware-cli schedule && echo "Firmware scheduled — reboot to install" \
+  || echo "Firmware already up to date"
 
 # =============================================================================
 # DONE
