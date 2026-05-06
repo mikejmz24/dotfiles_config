@@ -102,5 +102,19 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 
-. "$HOME/.local/bin/env"
-export PATH="/Library/TeX/texbin:$PATH"
+# Mac-only paths
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  . "$HOME/.local/bin/env"
+  export PATH="/Library/TeX/texbin:$PATH"
+fi
+
+# Linux-only paths
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  export PATH="$HOME/bin:$PATH"
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# Ghostty shell integration (both platforms)
+if [ -n "$GHOSTTY_RESOURCES_DIR" ]; then
+  source "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration"
+fi
