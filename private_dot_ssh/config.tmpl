@@ -3,9 +3,12 @@ Host github-personal
     HostName github.com
     User git
     AddKeysToAgent yes
+{{- if eq .os "mac" }}
     UseKeychain yes
+{{- end }}
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
+{{- if eq .os "mac" }}
 
 # Work GitHub
 Host github-work
@@ -15,3 +18,4 @@ Host github-work
     UseKeychain yes
     IdentityFile ~/.ssh/id_ed25519_work
     IdentitiesOnly yes
+{{- end }}
