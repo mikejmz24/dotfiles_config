@@ -19,3 +19,6 @@ Library/Application Support/Code/User/History/**
 # SSH keys — never commit private keys
 .ssh/id_*
 .ssh/known_hosts
+
+# VSCode — extensions are machine-specific, never commit
+.vscode/**
