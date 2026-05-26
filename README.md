@@ -699,6 +699,19 @@ bash ~/dotfiles_config/linux-gnome-settings.sh
 - `Super+1-9` — switch to workspace N (clears default dash app launcher binding)
   - `Super+Shift+1-9` — move window to workspace N
 
+### Bloat Removal (`install-linux.sh`)
+
+Removed during fresh install to keep the system lean:
+
+| Removed                                                    | Reason                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------- |
+| `cheese`, `totem`, `example-content`                       | Webcam app, video player, sample content — not needed |
+| `thunderbird*`                                             | Web-based email only                                  |
+| `libreoffice*`                                             | Google Docs/Sheets/Slides used instead                |
+| CJK input methods (`ibus-chewing`, `ibus-libpinyin`, etc.) | English and Spanish only                              |
+| Non-ES/EN language packs                                   | Keeping EN and ES only                                |
+| Spell/hyphen/thesaurus for unused languages                | Same reason                                           |
+
 ### GNOME Extensions
 
 Install Extension Manager first:
