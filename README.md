@@ -696,6 +696,8 @@ bash ~/dotfiles_config/linux-gnome-settings.sh
 - Sets window management keybindings:
   - `Super+Up` — maximize window
   - `Super+F` — true fullscreen (hides everything)
+- `Super+1-9` — switch to workspace N (clears default dash app launcher binding)
+  - `Super+Shift+1-9` — move window to workspace N
 
 ### GNOME Extensions
 
@@ -774,30 +776,32 @@ and battery extensions specific to the Darter Pro 11.
 
 ## Known Mac vs Linux Differences
 
-| Feature          | Mac                               | Linux                                          |
-| ---------------- | --------------------------------- | ---------------------------------------------- |
-| Copy             | ⌘+C                               | Ctrl+Shift+C                                   |
-| Paste            | ⌘+V                               | Ctrl+Shift+V                                   |
-| Select all       | ⌘+A                               | Ctrl+Shift+A                                   |
-| Font size        | 18                                | 16                                             |
-| Fullscreen       | F11 / ⌘+F                         | Super+F                                        |
-| Maximize         | ⌘+Ctrl+F                          | Super+Up                                       |
-| App launcher     | Spotlight (⌘+Space)               | GNOME Activities (Super)                       |
-| Clipboard        | Native                            | wl-clipboard                                   |
-| Font install     | Brewfile                          | curl to `~/.local/share/fonts`                 |
-| Neovim           | `brew install neovim`             | `snap install nvim --classic`                  |
-| Ghostty          | Brewfile                          | `snap install ghostty --classic`               |
-| chezmoi          | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"`         |
-| External monitor | Any USB-C/HDMI                    | HDMI port or Thunderbolt 4 (⚡) only           |
-| Zsh plugins      | Installed via Oh My Zsh           | Same — clone to `~/.oh-my-zsh/custom/plugins/` |
-| chezmoi PATH     | Automatic                         | Add `$HOME/bin` manually                       |
-| fd binary        | `fd`                              | `fdfind` → symlinked to `fd`                   |
-| SSH keychain     | `UseKeychain yes` (in SSH config) | Not supported — omitted via template           |
-| SSH remotes      | `git@github-personal:...`         | `git@github.com:...`                           |
-| Work identity    | `~/.gitconfig-work` (manual)      | Not needed                                     |
-| bat              | Available                         | Not installed (Mac only)                       |
-| Docker           | Docker Desktop                    | Not installed                                  |
-| Top bar          | Native macOS                      | Auto-hidden via Hide Top Bar extension         |
+| Feature           | Mac                               | Linux                                          |
+| ----------------- | --------------------------------- | ---------------------------------------------- |
+| Copy              | ⌘+C                               | Ctrl+Shift+C                                   |
+| Paste             | ⌘+V                               | Ctrl+Shift+V                                   |
+| Select all        | ⌘+A                               | Ctrl+Shift+A                                   |
+| Font size         | 18                                | 16                                             |
+| Fullscreen        | F11 / ⌘+F                         | Super+F                                        |
+| Maximize          | ⌘+Ctrl+F                          | Super+Up                                       |
+| Workspace switch  | Mission Control (3-finger swipe)  | Super+1-9                                      |
+| Move to workspace | —                                 | Super+Shift+1-9                                |
+| App launcher      | Spotlight (⌘+Space)               | GNOME Activities (Super)                       |
+| Clipboard         | Native                            | wl-clipboard                                   |
+| Font install      | Brewfile                          | curl to `~/.local/share/fonts`                 |
+| Neovim            | `brew install neovim`             | `snap install nvim --classic`                  |
+| Ghostty           | Brewfile                          | `snap install ghostty --classic`               |
+| chezmoi           | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"`         |
+| External monitor  | Any USB-C/HDMI                    | HDMI port or Thunderbolt 4 (⚡) only           |
+| Zsh plugins       | Installed via Oh My Zsh           | Same — clone to `~/.oh-my-zsh/custom/plugins/` |
+| chezmoi PATH      | Automatic                         | Add `$HOME/bin` manually                       |
+| fd binary         | `fd`                              | `fdfind` → symlinked to `fd`                   |
+| SSH keychain      | `UseKeychain yes` (in SSH config) | Not supported — omitted via template           |
+| SSH remotes       | `git@github-personal:...`         | `git@github.com:...`                           |
+| Work identity     | `~/.gitconfig-work` (manual)      | Not needed                                     |
+| bat               | Available                         | Not installed (Mac only)                       |
+| Docker            | Docker Desktop                    | Not installed                                  |
+| Top bar           | Native macOS                      | Auto-hidden via Hide Top Bar extension         |
 
 ---
 
