@@ -31,3 +31,19 @@ dconf write /org/gnome/shell/extensions/just-perfection/dash false
 dconf write /org/gnome/shell/extensions/just-perfection/dash-app-running false
 dconf write /org/gnome/shell/extensions/just-perfection/dash-separator false
 dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
+
+# ── Workspace keybindings ──────────────────────────────
+# Clear Super+1-9 from dash app launcher
+for i in {1..9}; do
+  gsettings set org.gnome.shell.keybindings switch-to-application-$i '[]'
+done
+
+# Super+1-9 → switch to workspace
+for i in {1..9}; do
+  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-$i "['<Super>$i']"
+done
+
+# Super+Shift+1-9 → move window to workspace
+for i in {1..9}; do
+  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-$i "['<Super><Shift>$i']"
+done
