@@ -69,6 +69,59 @@ fi
 echo "✅ fd symlink created at ~/.local/bin/fd"
 
 # =============================================================================
+# SECTION 1b: REMOVE PRE-INSTALLED BLOAT
+# Ubuntu 24.04 ships with several apps and language packs that are not needed
+# for this setup. Removing them keeps the system lean and performant.
+#
+# Safe to re-run — apt remove is idempotent.
+# =============================================================================
+
+echo "→ Removing pre-installed bloat..."
+
+# Webcam app and video player — not needed, using web browser for media
+sudo apt remove --purge cheese totem example-content 2>/dev/null || true
+
+# Thunderbird — using web-based email instead
+# LibreOffice — using Google Docs/Sheets/Slides instead
+sudo apt remove --purge 'thunderbird*' 'libreoffice*' 2>/dev/null || true
+
+# CJK input methods — English and Spanish only
+sudo apt remove --purge \
+  ibus-chewing ibus-libpinyin ibus-m17n \
+  'ibus-table-cangjie*' ibus-table-wubi ibus-table-quick-classic \
+  libchewing3 libchewing3-data libpinyin-data libpinyin15 \
+  libm17n-0 libotf1 m17n-db libopencc1.1 libopencc-data \
+  libmarisa0 fonts-arphic-ukai fonts-arphic-uming 2>/dev/null || true
+
+# Non-ES/EN language packs — keeping English and Spanish only
+sudo apt remove --purge \
+  language-pack-de language-pack-de-base \
+  language-pack-fr language-pack-fr-base \
+  language-pack-it language-pack-it-base \
+  language-pack-ru language-pack-ru-base \
+  language-pack-pt language-pack-pt-base \
+  language-pack-zh-hans language-pack-zh-hans-base \
+  language-pack-gnome-de language-pack-gnome-de-base \
+  language-pack-gnome-fr language-pack-gnome-fr-base \
+  language-pack-gnome-it language-pack-gnome-it-base \
+  language-pack-gnome-ru language-pack-gnome-ru-base \
+  language-pack-gnome-pt language-pack-gnome-pt-base \
+  language-pack-gnome-zh-hans language-pack-gnome-zh-hans-base \
+  gnome-user-docs-de gnome-user-docs-fr gnome-user-docs-it \
+  gnome-user-docs-ru gnome-user-docs-pt gnome-user-docs-zh-hans 2>/dev/null || true
+
+# Spell/hyphen/thesaurus for unused languages
+sudo apt remove --purge \
+  hyphen-de hyphen-fr hyphen-it hyphen-ru \
+  hyphen-pt-br hyphen-pt-pt hyphen-en-ca hyphen-en-gb \
+  mythes-de mythes-de-ch mythes-fr mythes-it \
+  mythes-ru mythes-pt-pt mythes-en-au hunspell-fr 2>/dev/null || true
+
+sudo apt autoremove -y && sudo apt clean
+
+echo "✅ Bloat removed"
+
+# =============================================================================
 # SECTION 3: SNAP PACKAGES
 # Applications installed via Snap. These are sandboxed and auto-updating.
 # Snap is pre-installed on Ubuntu.
