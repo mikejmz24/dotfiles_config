@@ -991,3 +991,11 @@ sudo apt update 2>&1 | grep system76  # check if back online
 - [Hide Top Bar extension](https://extensions.gnome.org/extension/545/hide-top-bar/)
 - [nvim-treesitter archived (April 2026)](https://byteiota.com/nvim-treesitter-archived-13k-star-plugin-shut-down-2026/)
 - [dotfiles.github.io](https://dotfiles.github.io/)
+
+### chezmoi tracking notes
+
+Firefox `userContent.css` is **not tracked by chezmoi** — it is written by
+`install-linux.sh` at setup time. This avoids chezmoi noise from Firefox
+constantly changing permissions on its snap profile directories.
+
+The `private_snap/**` path is permanently ignored in `.chezmoiignore`.
