@@ -85,11 +85,6 @@ sudo apt remove --purge cheese totem example-content 2>/dev/null || true
 # LibreOffice — using Google Docs/Sheets/Slides instead
 sudo apt remove --purge 'thunderbird*' 'libreoffice*' 2>/dev/null || true
 
-# Thunderbird — using web-based email instead
-# NOTE: Ubuntu 24.04 ships Thunderbird as a Snap, not apt — must remove both
-sudo apt remove --purge 'thunderbird*' 2>/dev/null || true
-sudo snap remove thunderbird 2>/dev/null || true
-
 # CJK input methods — English and Spanish only
 sudo apt remove --purge \
   ibus-chewing ibus-libpinyin ibus-m17n \
@@ -360,3 +355,41 @@ echo " 3. Open nvim — lazy.nvim will auto-install all plugins"
 echo " 4. Inside nvim run: :checkhealth"
 echo " 5. Complete the SSH key setup above"
 echo "============================================="
+
+# =============================================================================
+# GTK Theme — Nordic with navy accent
+# =============================================================================
+echo "Setting up Nordic theme..."
+
+# Apply Nordic theme
+gsettings set org.gnome.desktop.interface gtk-theme 'Nordic'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# GTK-3.0 selection color override
+mkdir -p ~/.config/gtk-3.0
+cat > ~/.config/gtk-3.0/gtk.css << 'GTKEOF'
+@define-color selected_bg_color #1a3a6b;
+@define-color selected_fg_color #ffffff;
+GTKEOF
+
+# GTK-4.0 selection color override
+mkdir -p ~/.config/gtk-4.0
+grep -q "theme_selected_bg_color" ~/.config/gtk-4.0/gtk.css 2>/dev/null || cat >> ~/.config/gtk-4.0/gtk.css << 'GTKEOF'
+@define-color theme_selected_bg_color #1a3a6b;
+@define-color theme_unfocused_selected_bg_color #1a3a6b;
+@define-color accent_bg_color #1a3a6b;
+GTKEOF
+
+# Firefox snap selection color override
+FIREFOX_PROFILE=~/snap/firefox/common/.mozilla/firefox
+PROFILE_DIR=$(ls "$FIREFOX_PROFILE" | grep -v "Crash\|Pending\|Profile\|ini" | head -1)
+if [ -n "$PROFILE_DIR" ]; then
+  mkdir -p "$FIREFOX_PROFILE/$PROFILE_DIR/chrome"
+  cat > "$FIREFOX_PROFILE/$PROFILE_DIR/chrome/userContent.css" << 'FFEOF'
+::selection {
+  background-color: #1a3a6b !important;
+  color: #ffffff !important;
+}
+FFEOF
+  echo "Firefox selection color set. Enable in about:config: toolkit.legacyUserProfileCustomizations.stylesheets = true"
+fi
