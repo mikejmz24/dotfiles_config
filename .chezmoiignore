@@ -22,3 +22,21 @@ Library/Application Support/Code/User/History/**
 
 # VSCode — extensions are machine-specific, never commit
 .vscode/**
+
+# Firefox snap — Linux only, ignore on Mac
+{{ if ne .chezmoi.os "linux" }}
+private_snap/**
+{{ end }}
+
+# Firefox profile — only track chrome/userContent.css, ignore everything else
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/Cache*
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/lock
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/storage*
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/sessionstore*
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/crashes*
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/minidumps*
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/datareporting*
+private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/saved-telemetry-pings*
+
+# Firefox snap — handled by install-linux.sh, not tracked by chezmoi
+private_snap/**
