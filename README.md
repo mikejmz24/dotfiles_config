@@ -703,14 +703,14 @@ bash ~/dotfiles_config/linux-gnome-settings.sh
 
 Removed during fresh install to keep the system lean:
 
-| Removed                                                    | Reason                                                |
-| ---------------------------------------------------------- | ----------------------------------------------------- |
-| `cheese`, `totem`, `example-content`                       | Webcam app, video player, sample content — not needed |
-| `thunderbird*`                                             | Web-based email only                                  |
-| `libreoffice*`                                             | Google Docs/Sheets/Slides used instead                |
-| CJK input methods (`ibus-chewing`, `ibus-libpinyin`, etc.) | English and Spanish only                              |
-| Non-ES/EN language packs                                   | Keeping EN and ES only                                |
-| Spell/hyphen/thesaurus for unused languages                | Same reason                                           |
+| Removed                                                    | Reason                                                                                    |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `cheese`, `totem`, `example-content`                       | Webcam app, video player, sample content — not needed                                     |
+| `thunderbird*`                                             | Web-based email only. Shipped as Snap on Ubuntu 24.04 — removed via both `apt` and `snap` |
+| `libreoffice*`                                             | Google Docs/Sheets/Slides used instead                                                    |
+| CJK input methods (`ibus-chewing`, `ibus-libpinyin`, etc.) | English and Spanish only                                                                  |
+| Non-ES/EN language packs                                   | Keeping EN and ES only                                                                    |
+| Spell/hyphen/thesaurus for unused languages                | Same reason                                                                               |
 
 ### GNOME Extensions
 
