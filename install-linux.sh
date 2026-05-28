@@ -85,6 +85,11 @@ sudo apt remove --purge cheese totem example-content 2>/dev/null || true
 # LibreOffice — using Google Docs/Sheets/Slides instead
 sudo apt remove --purge 'thunderbird*' 'libreoffice*' 2>/dev/null || true
 
+# Thunderbird — using web-based email instead
+# NOTE: Ubuntu 24.04 ships Thunderbird as a Snap, not apt — must remove both
+sudo apt remove --purge 'thunderbird*' 2>/dev/null || true
+sudo snap remove thunderbird 2>/dev/null || true
+
 # CJK input methods — English and Spanish only
 sudo apt remove --purge \
   ibus-chewing ibus-libpinyin ibus-m17n \
