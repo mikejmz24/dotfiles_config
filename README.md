@@ -99,19 +99,20 @@ dotfiles_config/
 
 ## What Is NOT In This Repo
 
-| Item                             | Reason                                                           |
-| -------------------------------- | ---------------------------------------------------------------- |
-| `~/.gitconfig-work`              | Contains work email — never commit. Create manually on Mac.      |
-| `~/.config/gh/hosts.yml`         | Contains GitHub auth tokens — never commit.                      |
-| `~/.ssh/id_*`                    | Private SSH keys — never commit. Generate fresh on each machine. |
-| `~/.ssh/known_hosts`             | Machine-specific host fingerprints — never commit.               |
-| `.oh-my-zsh/`                    | Installed separately by its own installer.                       |
-| Nerd Fonts                       | Installed via Brewfile (Mac) or curl (Linux).                    |
-| `~/.config/chezmoi/chezmoi.toml` | Machine-specific identity — never commit.                        |
-| `~/.config/fish/`                | Not actively used.                                               |
-| `~/.config/zed/`                 | Not actively used.                                               |
-| `~/.config/iterm2/`              | Replaced by Ghostty.                                             |
-| `~/.config/gh/hosts.yml`         | Auth tokens — never commit.                                      |
+| Item                             | Reason                                                                                                     |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `~/.gitconfig-work`              | Contains work email — never commit. Create manually on Mac.                                                |
+| `~/.config/gh/hosts.yml`         | Contains GitHub auth tokens — never commit.                                                                |
+| `~/.ssh/id_*`                    | Private SSH keys — never commit. Generate fresh on each machine.                                           |
+| `~/.ssh/known_hosts`             | Machine-specific host fingerprints — never commit.                                                         |
+| `~/.config/monitors.xml`         | Per-monitor display layout & scale — tied to each display's connector/serial. Set by hand on each machine. |
+| `.oh-my-zsh/`                    | Installed separately by its own installer.                                                                 |
+| Nerd Fonts                       | Installed via Brewfile (Mac) or curl (Linux).                                                              |
+| `~/.config/chezmoi/chezmoi.toml` | Machine-specific identity — never commit.                                                                  |
+| `~/.config/fish/`                | Not actively used.                                                                                         |
+| `~/.config/zed/`                 | Not actively used.                                                                                         |
+| `~/.config/iterm2/`              | Replaced by Ghostty.                                                                                       |
+| `~/.config/gh/hosts.yml`         | Auth tokens — never commit.                                                                                |
 
 ---
 
@@ -625,6 +626,10 @@ chezmoi update
 
 > **Config file name:** Must be `config`, NOT `config.ghostty`.
 
+> **Display scaling note:** Ghostty is a native Wayland app, so it stays crisp
+> at any fractional scale (e.g. 150% on the 4K external). See Linux Desktop
+> Configuration → Display Scaling.
+
 ---
 
 ## Neovim Configuration
@@ -690,14 +695,66 @@ bash ~/dotfiles_config/linux-gnome-settings.sh
 
 **What it does:**
 
-- Frees `Super+A` from GNOME app drawer
-- Frees `Super+V` from GNOME message tray
-- Sets GNOME Terminal copy/paste keybindings
+- Enables fractional / per-monitor display scaling on Wayland
+  (`scale-monitor-framebuffer` experimental flag — see Display Scaling below)
 - Sets window management keybindings:
-  - `Super+Up` — maximize window
-  - `Super+F` — true fullscreen (hides everything)
-- `Super+1-9` — switch to workspace N (clears default dash app launcher binding)
+  - `Super+Up` — maximize window (keeps top bar visible)
+  - `Super+F` — true fullscreen (hides everything including top bar)
+- Disables `ubuntu-dock` and hides the GNOME built-in dash via Just Perfection
+- Clears `Super+1-9` from the dash app launcher, then rebinds:
+  - `Super+1-9` — switch to workspace N
   - `Super+Shift+1-9` — move window to workspace N
+
+### Display Scaling (Fractional / Per-Monitor)
+
+The Darter Pro panel is 16" 1920×1200 (~141 PPI). A 32" 4K external monitor
+(3840×2160) is ~138 PPI, so at the default 100% scale everything on the external
+renders far too small — and because a desktop monitor sits farther away than a
+laptop, it feels smaller still.
+
+GNOME on Wayland supports independent per-monitor scaling, but the fractional
+steps (125% / 150% / 175%) are hidden behind an experimental flag, enabled by
+`linux-gnome-settings.sh`:
+
+```bash
+gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']"
+```
+
+After that, set the scale per monitor in **Settings → Displays**:
+
+| Display                   | Resolution | Scale | Logical workspace |
+| ------------------------- | ---------- | ----- | ----------------- |
+| Built-in (`eDP-1`)        | 1920×1200  | 100%  | 1920×1200         |
+| 32" external (`HDMI-A-1`) | 3840×2160  | 150%  | 2560×1440         |
+
+150% is the comfortable sweet spot for a 32" 4K at desk distance; drop to 125%
+(→ 3072×1728 logical) if more screen real estate is preferred.
+
+> **Detecting native resolution per output:**
+>
+> ```bash
+> for f in /sys/class/drm/*/modes; do
+>   [ -s "$f" ] && echo "$(basename "$(dirname "$f")"): $(head -n1 "$f")"
+> done
+> ```
+>
+> First line of each connected output is its native resolution.
+
+**Crispness:** GNOME does fractional scaling by rendering larger and downscaling.
+Native Wayland apps stay sharp (Ghostty, Firefox). XWayland apps can look slightly
+soft under fractional scaling — for Chrome/Chromium, launch with
+`--ozone-platform-hint=auto` to render natively. The only persistently soft thing
+is the windowed Steam _client_ UI, which is purely cosmetic.
+
+**Streams & games are NOT affected:** fullscreen video and games bypass the
+compositor's desktop scaling entirely and run at the monitor's native 3840×2160 —
+no quality loss, no blur, no performance penalty. The scale percentage only
+governs how large windows and UI chrome are drawn on the desktop.
+
+> **Not tracked by chezmoi:** the per-monitor scale assignment lives in
+> `~/.config/monitors.xml`, which is tied to each display's connector and serial
+> number. Don't sync it — it won't match other machines. Only the enabling flag
+> (in `linux-gnome-settings.sh`) is shared across machines.
 
 ### Bloat Removal (`install-linux.sh`)
 
@@ -771,6 +828,9 @@ The Darter Pro 11 has **three** video-capable outputs:
 > Always use the Thunderbolt 4 port (⚡) for USB-C hubs with HDMI/DisplayPort.
 > The regular USB-C port will not output video even with a compatible hub.
 
+> **Scaling:** A 32" 4K external comes up on the `HDMI-A-1` output and looks
+> too small at 100%. See Display Scaling above — set it to 150%.
+
 ### System76 Driver and Firmware
 
 ```bash
@@ -789,32 +849,33 @@ and battery extensions specific to the Darter Pro 11.
 
 ## Known Mac vs Linux Differences
 
-| Feature           | Mac                               | Linux                                          |
-| ----------------- | --------------------------------- | ---------------------------------------------- |
-| Copy              | ⌘+C                               | Ctrl+Shift+C                                   |
-| Paste             | ⌘+V                               | Ctrl+Shift+V                                   |
-| Select all        | ⌘+A                               | Ctrl+Shift+A                                   |
-| Font size         | 18                                | 16                                             |
-| Fullscreen        | F11 / ⌘+F                         | Super+F                                        |
-| Maximize          | ⌘+Ctrl+F                          | Super+Up                                       |
-| Workspace switch  | Mission Control (3-finger swipe)  | Super+1-9                                      |
-| Move to workspace | —                                 | Super+Shift+1-9                                |
-| App launcher      | Spotlight (⌘+Space)               | GNOME Activities (Super)                       |
-| Clipboard         | Native                            | wl-clipboard                                   |
-| Font install      | Brewfile                          | curl to `~/.local/share/fonts`                 |
-| Neovim            | `brew install neovim`             | `snap install nvim --classic`                  |
-| Ghostty           | Brewfile                          | `snap install ghostty --classic`               |
-| chezmoi           | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"`         |
-| External monitor  | Any USB-C/HDMI                    | HDMI port or Thunderbolt 4 (⚡) only           |
-| Zsh plugins       | Installed via Oh My Zsh           | Same — clone to `~/.oh-my-zsh/custom/plugins/` |
-| chezmoi PATH      | Automatic                         | Add `$HOME/bin` manually                       |
-| fd binary         | `fd`                              | `fdfind` → symlinked to `fd`                   |
-| SSH keychain      | `UseKeychain yes` (in SSH config) | Not supported — omitted via template           |
-| SSH remotes       | `git@github-personal:...`         | `git@github.com:...`                           |
-| Work identity     | `~/.gitconfig-work` (manual)      | Not needed                                     |
-| bat               | Available                         | Not installed (Mac only)                       |
-| Docker            | Docker Desktop                    | Not installed                                  |
-| Top bar           | Native macOS                      | Auto-hidden via Hide Top Bar extension         |
+| Feature           | Mac                               | Linux                                                    |
+| ----------------- | --------------------------------- | -------------------------------------------------------- |
+| Copy              | ⌘+C                               | Ctrl+Shift+C                                             |
+| Paste             | ⌘+V                               | Ctrl+Shift+V                                             |
+| Select all        | ⌘+A                               | Ctrl+Shift+A                                             |
+| Font size         | 18                                | 16                                                       |
+| Fullscreen        | F11 / ⌘+F                         | Super+F                                                  |
+| Maximize          | ⌘+Ctrl+F                          | Super+Up                                                 |
+| Workspace switch  | Mission Control (3-finger swipe)  | Super+1-9                                                |
+| Move to workspace | —                                 | Super+Shift+1-9                                          |
+| App launcher      | Spotlight (⌘+Space)               | GNOME Activities (Super)                                 |
+| Clipboard         | Native                            | wl-clipboard                                             |
+| Display scaling   | Automatic per-display (Retina)    | Fractional flag + per-monitor in Settings (monitors.xml) |
+| Font install      | Brewfile                          | curl to `~/.local/share/fonts`                           |
+| Neovim            | `brew install neovim`             | `snap install nvim --classic`                            |
+| Ghostty           | Brewfile                          | `snap install ghostty --classic`                         |
+| chezmoi           | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"`                   |
+| External monitor  | Any USB-C/HDMI                    | HDMI port or Thunderbolt 4 (⚡) only                     |
+| Zsh plugins       | Installed via Oh My Zsh           | Same — clone to `~/.oh-my-zsh/custom/plugins/`           |
+| chezmoi PATH      | Automatic                         | Add `$HOME/bin` manually                                 |
+| fd binary         | `fd`                              | `fdfind` → symlinked to `fd`                             |
+| SSH keychain      | `UseKeychain yes` (in SSH config) | Not supported — omitted via template                     |
+| SSH remotes       | `git@github-personal:...`         | `git@github.com:...`                                     |
+| Work identity     | `~/.gitconfig-work` (manual)      | Not needed                                               |
+| bat               | Available                         | Not installed (Mac only)                                 |
+| Docker            | Docker Desktop                    | Not installed                                            |
+| Top bar           | Native macOS                      | Auto-hidden via Hide Top Bar extension                   |
 
 ---
 
@@ -832,6 +893,39 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting \
 source ~/.zshrc
 echo $plugins  # should show all three plugins
 ```
+
+### Fractional scaling options missing in Settings → Displays
+
+The experimental flag isn't set. Enable it and re-open Settings:
+
+```bash
+gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']"
+# Log out and back in if the 125/150/175% options still don't appear
+```
+
+### External monitor looks too small (everything tiny)
+
+It's a HiDPI panel (e.g. 32" 4K) running at 100%. Enable fractional scaling
+(above), then in **Settings → Displays** select the external and set Scale to
+**150%** (or 125% for more space). Confirm its native resolution with:
+
+```bash
+for f in /sys/class/drm/*/modes; do
+  [ -s "$f" ] && echo "$(basename "$(dirname "$f")"): $(head -n1 "$f")"
+done
+```
+
+### Scaled apps look blurry
+
+GNOME fractional scaling blurs XWayland apps. Run them natively in Wayland:
+
+```bash
+# Chrome / Chromium / Electron apps
+google-chrome --ozone-platform-hint=auto
+```
+
+Ghostty and modern Firefox are already native Wayland and stay crisp. Fullscreen
+video and games are unaffected — they run at native resolution.
 
 ### External monitor not detected on Linux
 
@@ -976,6 +1070,8 @@ sudo apt update 2>&1 | grep system76  # check if back online
 
 - **Mac:** MacBook (ARM, Apple Silicon) — work machine
 - **Linux:** System76 Darter Pro 11 (`darp11`), Ubuntu 24.04 LTS, GNOME/Wayland
+  - Built-in display: 16" 1920×1200 (~141 PPI), Intel Arc graphics
+  - External: 32" 4K (3840×2160) on `HDMI-A-1`, scaled to 150%
 
 ---
 
