@@ -357,7 +357,7 @@ echo " 5. Complete the SSH key setup above"
 echo "============================================="
 
 # =============================================================================
-# GTK Theme — Nordic with navy accent
+# GTK Theme — Nordic with navy accent #2354a0 (Admiral)
 # =============================================================================
 echo "Setting up Nordic theme..."
 
@@ -365,19 +365,47 @@ echo "Setting up Nordic theme..."
 gsettings set org.gnome.desktop.interface gtk-theme 'Nordic'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 
+# GTK-4.0 — copy full Nordic theme CSS and apply fixes
+mkdir -p ~/.config/gtk-4.0
+cp ~/.local/share/themes/Nordic/gtk-4.0/gtk.css ~/.config/gtk-4.0/gtk.css
+
+# Fix symlinks to point to Nordic (not Graphite)
+ln -sf ~/.local/share/themes/Nordic/gtk-4.0/assets ~/.config/gtk-4.0/assets
+ln -sf ~/.local/share/themes/Nordic/gtk-4.0/gtk-dark.css ~/.config/gtk-4.0/gtk-dark.css
+
+# Fix sidebar selected row text color (was hardcoded to Admiral blue)
+sed -i '/\.sidebar-pane placessidebar \.navigation-sidebar > row:selected,/{
+  n; n
+  s/color: #2354a0;/color: #ffffff;/
+}' ~/.config/gtk-4.0/gtk.css
+
+# Append Nautilus sidebar + file grid selection overrides
+cat >> ~/.config/gtk-4.0/gtk.css << 'GTKEOF'
+
+/* Nautilus sidebar + file grid — high contrast for accessibility */
+placessidebar row:selected label.sidebar-label {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+placessidebar row:selected {
+  background-color: #0f2347;
+  background-image: none;
+  border-radius: 6px;
+}
+
+gridview > child:selected {
+  background-color: rgba(35, 84, 160, 0.5);
+  border-radius: 8px;
+  outline: 2px solid #2354a0;
+}
+GTKEOF
+
 # GTK-3.0 selection color override
 mkdir -p ~/.config/gtk-3.0
 cat > ~/.config/gtk-3.0/gtk.css << 'GTKEOF'
-@define-color selected_bg_color #1a3a6b;
+@define-color selected_bg_color #2354a0;
 @define-color selected_fg_color #ffffff;
-GTKEOF
-
-# GTK-4.0 selection color override
-mkdir -p ~/.config/gtk-4.0
-grep -q "theme_selected_bg_color" ~/.config/gtk-4.0/gtk.css 2>/dev/null || cat >> ~/.config/gtk-4.0/gtk.css << 'GTKEOF'
-@define-color theme_selected_bg_color #1a3a6b;
-@define-color theme_unfocused_selected_bg_color #1a3a6b;
-@define-color accent_bg_color #1a3a6b;
 GTKEOF
 
 # Firefox snap selection color override
@@ -387,7 +415,7 @@ if [ -n "$PROFILE_DIR" ]; then
   mkdir -p "$FIREFOX_PROFILE/$PROFILE_DIR/chrome"
   cat > "$FIREFOX_PROFILE/$PROFILE_DIR/chrome/userContent.css" << 'FFEOF'
 ::selection {
-  background-color: #1a3a6b !important;
+  background-color: #2354a0 !important;
   color: #ffffff !important;
 }
 FFEOF
