@@ -1075,6 +1075,71 @@ sudo apt update 2>&1 | grep system76  # check if back online
 
 ---
 
+## Desktop Theming (Linux / Ubuntu 24.04)
+
+### Theme: Nordic dark with Admiral accent `#2354a0`
+
+Nordic is a dark GTK theme. We override its default teal accent with Admiral
+navy `#2354a0` across all GTK layers, Nautilus, and Firefox.
+
+### What `install-linux.sh` does automatically
+
+1. Sets Nordic as the GTK theme via `gsettings`
+2. Copies Nordic's `gtk.css` to `~/.config/gtk-4.0/gtk.css`
+3. Fixes symlinks — `gtk-dark.css` and `assets` point to Nordic (not Graphite)
+4. Fixes sidebar selected text — hardcoded `color: #2354a0` changed to `#ffffff`
+5. Appends Nautilus sidebar + file grid selection overrides
+6. Writes `~/.config/gtk-3.0/gtk.css` with selection color
+7. Writes Firefox `userContent.css` for snap Firefox
+
+### Firefox manual step (one-time)
+
+After running `install-linux.sh`, open Firefox and go to `about:config`: `toolkit.legacyUserProfileCustomizations.stylesheets = true`
+Restart Firefox. Text selection will now match the system navy accent.
+
+### Key colors
+
+| Element              | Color                    |
+| -------------------- | ------------------------ |
+| Admiral accent       | `#2354a0`                |
+| Sidebar selected row | `#0f2347`                |
+| File grid fill       | `rgba(35, 84, 160, 0.5)` |
+| File grid outline    | `#2354a0`                |
+| Selected text        | `#ffffff`                |
+
+### Why so many layers needed patching
+
+| Layer          | File                        | What it controls                     |
+| -------------- | --------------------------- | ------------------------------------ |
+| GTK3           | `~/.config/gtk-3.0/gtk.css` | Most native apps                     |
+| GTK4           | `~/.config/gtk-4.0/gtk.css` | Modern GNOME apps including Nautilus |
+| Firefox (snap) | `chrome/userContent.css`    | Firefox ignores all GTK layers       |
+
+### Key fix: Nautilus sidebar selected text
+
+The sidebar selected item text was Admiral blue instead of white. Root cause:
+`.sidebar-pane placessidebar .navigation-sidebar > row:selected label.sidebar-label`
+was hardcoded to `color: #2354a0` inside the Nordic CSS.
+
+Also: `gtk-dark.css` and `assets` were symlinks pointing to old Graphite-blue-Dark.
+Fixed to point to Nordic.
+
+### How to test CSS changes live
+
+Open Nautilus → press `Ctrl+Shift+D` → CSS tab → type rules live.
+GTK Inspector injects CSS at highest priority — use it to verify selectors
+before writing to files.
+
+### Themes tried and rejected
+
+| Theme                     | Reason                                    |
+| ------------------------- | ----------------------------------------- |
+| `Yaru-prussiangreen-dark` | Too green                                 |
+| `Yaru-purple-dark`        | Too purple                                |
+| `Yaru-blue-dark`          | Not deep enough                           |
+| `Graphite-blue-Dark`      | Accent hardcoded as Google blue `#1A73E8` |
+| `Nordic-darker`           | Kept as fallback variant                  |
+
 ## References
 
 - [chezmoi docs](https://www.chezmoi.io/user-guide/setup/)
