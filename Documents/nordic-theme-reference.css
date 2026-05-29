@@ -1,0 +1,120 @@
+/* =============================================================================
+ * Nordic Dark Theme — Admiral Navy Accent #2354a0
+ * Reference file — NOT loaded automatically
+ * To apply: copy contents to ~/.config/gtk-4.0/gtk.css
+ * =============================================================================
+ *
+ * Theme: Nordic dark
+ * Accent: Admiral navy #2354a0
+ * Sidebar background: #0a1628
+ * Sidebar selected row: #0f2347
+ * File grid selection: rgba(35, 84, 160, 0.5) + outline #2354a0
+ * Firefox selection: #2354a0
+ *
+ * Key fix: .sidebar-pane placessidebar .navigation-sidebar > row:selected
+ * label.sidebar-label was hardcoded to color: #2354a0 (Admiral blue).
+ * Fixed to color: #ffffff for accessibility/contrast.
+ *
+ * gtk-dark.css and assets symlinks must point to Nordic, not Graphite.
+ * ln -sf ~/.local/share/themes/Nordic/gtk-4.0/assets ~/.config/gtk-4.0/assets
+ * ln -sf ~/.local/share/themes/Nordic/gtk-4.0/gtk-dark.css ~/.config/gtk-4.0/gtk-dark.css
+ * ============================================================================= */
+
+/* --- Nautilus sidebar + file grid — high contrast for accessibility --- */
+
+placessidebar row:selected label.sidebar-label {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+placessidebar row:selected {
+  background-color: #0f2347;
+  background-image: none;
+  border-radius: 6px;
+}
+
+gridview > child:selected {
+  background-color: rgba(35, 84, 160, 0.5);
+  border-radius: 8px;
+  outline: 2px solid #2354a0;
+}
+
+/* --- GTK-3.0 selection color (goes in ~/.config/gtk-3.0/gtk.css) --- */
+/*
+@define-color selected_bg_color #2354a0;
+@define-color selected_fg_color #ffffff;
+*/
+
+/* --- Firefox snap (goes in chrome/userContent.css) --- */
+/*
+::selection {
+  background-color: #2354a0 !important;
+  color: #ffffff !important;
+}
+*
+*/
+
+/* =============================================================================
+ * install-linux.sh THEME SECTION (for reference)
+ * ============================================================================= */
+
+/*
+
+# Apply Nordic theme
+gsettings set org.gnome.desktop.interface gtk-theme 'Nordic'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# Copy Nordic gtk.css to user config
+mkdir -p ~/.config/gtk-4.0
+cp ~/.local/share/themes/Nordic/gtk-4.0/gtk.css ~/.config/gtk-4.0/gtk.css
+
+# Fix symlinks to point to Nordic (not Graphite)
+ln -sf ~/.local/share/themes/Nordic/gtk-4.0/assets ~/.config/gtk-4.0/assets
+ln -sf ~/.local/share/themes/Nordic/gtk-4.0/gtk-dark.css ~/.config/gtk-4.0/gtk-dark.css
+
+# Fix sidebar selected text color
+sed -i '/\.sidebar-pane placessidebar \.navigation-sidebar > row:selected,/{
+  n; n
+  s/color: #2354a0;/color: #ffffff;/
+}' ~/.config/gtk-4.0/gtk.css
+
+# Append Nautilus sidebar + file grid overrides
+cat >> ~/.config/gtk-4.0/gtk.css << 'GTKEOF'
+placessidebar row:selected label.sidebar-label {
+  color: #ffffff;
+  font-weight: bold;
+}
+placessidebar row:selected {
+  background-color: #0f2347;
+  background-image: none;
+  border-radius: 6px;
+}
+gridview > child:selected {
+  background-color: rgba(35, 84, 160, 0.5);
+  border-radius: 8px;
+  outline: 2px solid #2354a0;
+}
+GTKEOF
+
+# GTK-3.0
+mkdir -p ~/.config/gtk-3.0
+cat > ~/.config/gtk-3.0/gtk.css << 'GTKEOF'
+@define-color selected_bg_color #2354a0;
+@define-color selected_fg_color #ffffff;
+GTKEOF
+
+# Firefox snap
+FIREFOX_PROFILE=~/snap/firefox/common/.mozilla/firefox
+PROFILE_DIR=$(ls "$FIREFOX_PROFILE" | grep -v "Crash\|Pending\|Profile\|ini" | head -1)
+if [ -n "$PROFILE_DIR" ]; then
+  mkdir -p "$FIREFOX_PROFILE/$PROFILE_DIR/chrome"
+  cat > "$FIREFOX_PROFILE/$PROFILE_DIR/chrome/userContent.css" << 'FFEOF'
+::selection {
+  background-color: #2354a0 !important;
+  color: #ffffff !important;
+}
+FFEOF
+  echo "Firefox: enable toolkit.legacyUserProfileCustomizations.stylesheets in about:config"
+fi
+
+*/
