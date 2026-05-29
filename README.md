@@ -999,3 +999,13 @@ Firefox `userContent.css` is **not tracked by chezmoi** — it is written by
 constantly changing permissions on its snap profile directories.
 
 The `private_snap/**` path is permanently ignored in `.chezmoiignore`.
+
+### Nautilus sidebar selected row text fix
+
+The sidebar selected item text color was hardcoded to `#2354a0` (Admiral blue)
+in `.sidebar-pane placessidebar .navigation-sidebar > row:selected label.sidebar-label`
+inside `~/.config/gtk-4.0/gtk.css` at line ~5469. This rule came from the old
+Graphite-blue-Dark theme that was still referenced via a symlink at
+`~/.config/gtk-4.0/gtk-dark.css`. Fixed by setting that rule to `#ffffff`.
+
+The `gtk-dark.css` symlink was also updated from Graphite-blue-Dark to Nordic.
