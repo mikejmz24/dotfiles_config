@@ -11,7 +11,20 @@
 # - Works natively on Wayland, no configuration needed
 # - Good enough for daily use on the Darter Pro
 # =============================================================================
-
+# 
+# =============================================================================
+# DISPLAY SCALING — Fractional / per-monitor scaling (Wayland)
+# Unlocks the 125% / 150% / 175% scale options in Settings → Displays so each
+# monitor can be scaled independently. Needed for the mixed-DPI setup: the
+# 16" 1920x1200 laptop panel (~141 PPI) alongside a 32" 4K external monitor
+# (3840x2160, ~138 PPI), which otherwise renders far too small at 100%.
+#
+# This line only ENABLES the feature. The actual per-monitor scale percentages
+# live in ~/.config/monitors.xml, which is tied to each display's connector and
+# serial number and is therefore machine-specific — it is NOT tracked by
+# chezmoi. Set the percentages by hand in Settings → Displays on each machine.
+# =============================================================================
+gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']"
 # =============================================================================
 # WINDOW MANAGEMENT
 # Super+Up — maximize window (keeps top bar visible)
