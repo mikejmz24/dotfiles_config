@@ -45,7 +45,8 @@ sudo apt install -y \
   python3-pip \  # Python package installer. Required to install pyright, black, isort, pylint, pynvim.
   python3-venv \ # Python virtual environment support. Required by Mason's Python tooling.
   wl-clipboard \ # Wayland clipboard provider. Required by Neovim clipboard integration (wl-copy/wl-paste).
-  fd-find        # (fdfind on Ubuntu) Fast file finder. Required by Telescope for extended file search capabilities.
+  fd-find \      # (fdfind on Ubuntu) Fast file finder. Required by Telescope for extended file search capabilities.
+  chromium-browser # Web browser. Chromium is used instead of Firefox due to Wayland compatibility issues on System76.
 
 echo "✅ apt packages installed"
 
@@ -84,6 +85,9 @@ sudo apt remove --purge cheese totem example-content 2>/dev/null || true
 # Thunderbird — using web-based email instead
 # LibreOffice — using Google Docs/Sheets/Slides instead
 sudo apt remove --purge 'thunderbird*' 'libreoffice*' 2>/dev/null || true
+
+# Firefox — using Chromium instead (Wayland compatibility)
+sudo apt remove --purge firefox 'firefox*' 2>/dev/null || true
 
 # CJK input methods — English and Spanish only
 sudo apt remove --purge \
@@ -262,7 +266,28 @@ pip install \
 echo "✅ Python packages installed"
 
 # =============================================================================
-# SECTION 10: GHOSTTY AS DEFAULT TERMINAL
+# SECTION 10: CHROMIUM AS DEFAULT BROWSER
+# Configures GNOME to use Chromium as the default web browser.
+# =============================================================================
+
+echo "→ Setting Chromium as default browser..."
+
+sudo update-alternatives --install \
+  /usr/bin/x-www-browser \
+  x-www-browser \
+  /usr/bin/chromium-browser 50
+
+sudo update-alternatives --install \
+  /usr/bin/gnome-www-browser \
+  gnome-www-browser \
+  /usr/bin/chromium-browser 50
+
+gsettings set org.gnome.desktop.default-applications.web-browser 'chromium-browser.desktop'
+
+echo "✅ Chromium set as default browser"
+
+# =============================================================================
+# SECTION 11: GHOSTTY AS DEFAULT TERMINAL
 # Configures GNOME to use Ghostty when opening a terminal from the file
 # manager (Nautilus) or keyboard shortcut (Ctrl+Alt+T).
 # =============================================================================
@@ -279,7 +304,7 @@ sudo update-alternatives --install \
 echo "✅ Ghostty set as default terminal"
 
 # =============================================================================
-# SECTION 11: GNOME SETTINGS
+# SECTION 12: GNOME SETTINGS
 # Apply all GNOME customizations documented in linux-gnome-settings.sh
 # =============================================================================
 
@@ -288,7 +313,7 @@ bash "$(dirname "$0")/linux-gnome-settings.sh"
 echo "✅ GNOME settings applied"
 
 # =============================================================================
-# SECTION 12: SSH KEY SETUP (MANUAL STEP)
+# SECTION 13: SSH KEY SETUP (MANUAL STEP)
 # SSH keys cannot be automated — they must be generated fresh on each machine
 # and manually added to GitHub. This section prints instructions.
 # =============================================================================
@@ -312,7 +337,7 @@ echo "Test with: ssh -T git@github.com"
 echo ""
 
 # =============================================================================
-# SECTION 13: GNOME EXTENSIONS (MANUAL STEP)
+# SECTION 14: GNOME EXTENSIONS (MANUAL STEP)
 # Install via: sudo apt install gnome-shell-extension-manager
 # Then open extension-manager and install:
 # 1. "Hide Top Bar" by tuxor1337 (NOT sonersg)
@@ -328,7 +353,7 @@ echo "  Install: 'Hide Top Bar' by tuxor1337 and 'Just Perfection'"
 echo ""
 
 # =============================================================================
-# SECTION 14: SYSTEM76 DRIVER AND FIRMWARE
+# SECTION 15: SYSTEM76 DRIVER AND FIRMWARE
 # system76-driver: hardware integration for Darter Pro 11
 # system76-firmware-cli: firmware updates (reboot to apply)
 # =============================================================================
@@ -408,16 +433,8 @@ cat > ~/.config/gtk-3.0/gtk.css << 'GTKEOF'
 @define-color selected_fg_color #ffffff;
 GTKEOF
 
-# Firefox snap selection color override
-FIREFOX_PROFILE=~/snap/firefox/common/.mozilla/firefox
-PROFILE_DIR=$(ls "$FIREFOX_PROFILE" | grep -v "Crash\|Pending\|Profile\|ini" | head -1)
-if [ -n "$PROFILE_DIR" ]; then
-  mkdir -p "$FIREFOX_PROFILE/$PROFILE_DIR/chrome"
-  cat > "$FIREFOX_PROFILE/$PROFILE_DIR/chrome/userContent.css" << 'FFEOF'
-::selection {
-  background-color: #2354a0 !important;
-  color: #ffffff !important;
-}
-FFEOF
-  echo "Firefox selection color set. Enable in about:config: toolkit.legacyUserProfileCustomizations.stylesheets = true"
-fi
+# Chromium selection color override (via user CSS if using Chromium as default browser)
+# Note: Chromium doesn't have the same per-profile CSS overrides like Firefox,
+# but the system GTK theme should apply to most UI elements.
+
+echo "✅ Nordic theme and overrides applied"

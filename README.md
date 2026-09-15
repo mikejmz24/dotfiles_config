@@ -506,6 +506,13 @@ chezmoi update
 | **Oh My Zsh** | Zsh framework — robbyrussell theme, git plugin   | Both     |
 | **Ghostty**   | GPU-accelerated terminal — fast, cross-platform  | Both     |
 
+### Web Browser
+
+| Tool         | Platform | Reason                                                                         |
+| ------------ | -------- | ------------------------------------------------------------------------------ |
+| **Firefox**  | Mac      | Installed via Brewfile                                                         |
+| **Chromium** | Linux    | Firefox had Wayland keyboard input issues on System76; Chromium works smoothly |
+
 ### File & Search Utilities
 
 | Tool        | Command | What It Does                          | Notes                                                       |
@@ -741,7 +748,7 @@ After that, set the scale per monitor in **Settings → Displays**:
 > First line of each connected output is its native resolution.
 
 **Crispness:** GNOME does fractional scaling by rendering larger and downscaling.
-Native Wayland apps stay sharp (Ghostty, Firefox). XWayland apps can look slightly
+Native Wayland apps stay sharp (Ghostty, Chromium). XWayland apps can look slightly
 soft under fractional scaling — for Chrome/Chromium, launch with
 `--ozone-platform-hint=auto` to render natively. The only persistently soft thing
 is the windowed Steam _client_ UI, which is purely cosmetic.
@@ -764,6 +771,7 @@ Removed during fresh install to keep the system lean:
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `cheese`, `totem`, `example-content`                       | Webcam app, video player, sample content — not needed                                     |
 | `thunderbird*`                                             | Web-based email only. Shipped as Snap on Ubuntu 24.04 — removed via both `apt` and `snap` |
+| `firefox`                                                  | Using Chromium instead (Wayland compatibility on System76)                                |
 | `libreoffice*`                                             | Google Docs/Sheets/Slides used instead                                                    |
 | CJK input methods (`ibus-chewing`, `ibus-libpinyin`, etc.) | English and Spanish only                                                                  |
 | Non-ES/EN language packs                                   | Keeping EN and ES only                                                                    |
@@ -851,6 +859,7 @@ and battery extensions specific to the Darter Pro 11.
 
 | Feature           | Mac                               | Linux                                                    |
 | ----------------- | --------------------------------- | -------------------------------------------------------- |
+| Browser           | Firefox                           | Chromium (Wayland compatibility)                         |
 | Copy              | ⌘+C                               | Ctrl+Shift+C                                             |
 | Paste             | ⌘+V                               | Ctrl+Shift+V                                             |
 | Select all        | ⌘+A                               | Ctrl+Shift+A                                             |
@@ -878,6 +887,64 @@ and battery extensions specific to the Darter Pro 11.
 | Top bar           | Native macOS                      | Auto-hidden via Hide Top Bar extension                   |
 
 ---
+
+## Desktop Theming (Linux / Ubuntu 24.04)
+
+### Theme: Nordic dark with Admiral accent `#2354a0`
+
+Nordic is a dark GTK theme. We override its default teal accent with Admiral
+navy `#2354a0` across all GTK layers and Nautilus.
+
+### What `install-linux.sh` does automatically
+
+1. Sets Nordic as the GTK theme via `gsettings`
+2. Copies Nordic's `gtk.css` to `~/.config/gtk-4.0/gtk.css`
+3. Fixes symlinks — `gtk-dark.css` and `assets` point to Nordic (not Graphite)
+4. Fixes sidebar selected text — hardcoded `color: #2354a0` changed to `#ffffff`
+5. Appends Nautilus sidebar + file grid selection overrides
+6. Writes `~/.config/gtk-3.0/gtk.css` with selection color
+
+### Key colors
+
+| Element              | Color                    |
+| -------------------- | ------------------------ |
+| Admiral accent       | `#2354a0`                |
+| Sidebar selected row | `#0f2347`                |
+| File grid fill       | `rgba(35, 84, 160, 0.5)` |
+| File grid outline    | `#2354a0`                |
+| Selected text        | `#ffffff`                |
+
+### Why so many layers need patching
+
+| Layer | File                        | What it controls                     |
+| ----- | --------------------------- | ------------------------------------ |
+| GTK3  | `~/.config/gtk-3.0/gtk.css` | Most native apps                     |
+| GTK4  | `~/.config/gtk-4.0/gtk.css` | Modern GNOME apps including Nautilus |
+
+### Key fix: Nautilus sidebar selected text
+
+The sidebar selected item text was Admiral blue instead of white. Root cause:
+`.sidebar-pane placessidebar .navigation-sidebar > row:selected label.sidebar-label`
+was hardcoded to `color: #2354a0` inside the Nordic CSS.
+
+Also: `gtk-dark.css` and `assets` were symlinks pointing to old Graphite-blue-Dark.
+Fixed to point to Nordic.
+
+### How to test CSS changes live
+
+Open Nautilus → press `Ctrl+Shift+D` → CSS tab → type rules live.
+GTK Inspector injects CSS at highest priority — use it to verify selectors
+before writing to files.
+
+### Themes tried and rejected
+
+| Theme                     | Reason                                    |
+| ------------------------- | ----------------------------------------- |
+| `Yaru-prussiangreen-dark` | Too green                                 |
+| `Yaru-purple-dark`        | Too purple                                |
+| `Yaru-blue-dark`          | Not deep enough                           |
+| `Graphite-blue-Dark`      | Accent hardcoded as Google blue `#1A73E8` |
+| `Nordic-darker`           | Kept as fallback variant                  |
 
 ## Troubleshooting
 
@@ -920,12 +987,12 @@ done
 GNOME fractional scaling blurs XWayland apps. Run them natively in Wayland:
 
 ```bash
-# Chrome / Chromium / Electron apps
-google-chrome --ozone-platform-hint=auto
+# Chromium
+chromium-browser --ozone-platform-hint=auto
 ```
 
-Ghostty and modern Firefox are already native Wayland and stay crisp. Fullscreen
-video and games are unaffected — they run at native resolution.
+Ghostty is already native Wayland and stays crisp. Fullscreen video and games are
+unaffected — they run at native resolution.
 
 ### External monitor not detected on Linux
 
@@ -1074,71 +1141,6 @@ sudo apt update 2>&1 | grep system76  # check if back online
   - External: 32" 4K (3840×2160) on `HDMI-A-1`, scaled to 150%
 
 ---
-
-## Desktop Theming (Linux / Ubuntu 24.04)
-
-### Theme: Nordic dark with Admiral accent `#2354a0`
-
-Nordic is a dark GTK theme. We override its default teal accent with Admiral
-navy `#2354a0` across all GTK layers, Nautilus, and Firefox.
-
-### What `install-linux.sh` does automatically
-
-1. Sets Nordic as the GTK theme via `gsettings`
-2. Copies Nordic's `gtk.css` to `~/.config/gtk-4.0/gtk.css`
-3. Fixes symlinks — `gtk-dark.css` and `assets` point to Nordic (not Graphite)
-4. Fixes sidebar selected text — hardcoded `color: #2354a0` changed to `#ffffff`
-5. Appends Nautilus sidebar + file grid selection overrides
-6. Writes `~/.config/gtk-3.0/gtk.css` with selection color
-7. Writes Firefox `userContent.css` for snap Firefox
-
-### Firefox manual step (one-time)
-
-After running `install-linux.sh`, open Firefox and go to `about:config`: `toolkit.legacyUserProfileCustomizations.stylesheets = true`
-Restart Firefox. Text selection will now match the system navy accent.
-
-### Key colors
-
-| Element              | Color                    |
-| -------------------- | ------------------------ |
-| Admiral accent       | `#2354a0`                |
-| Sidebar selected row | `#0f2347`                |
-| File grid fill       | `rgba(35, 84, 160, 0.5)` |
-| File grid outline    | `#2354a0`                |
-| Selected text        | `#ffffff`                |
-
-### Why so many layers needed patching
-
-| Layer          | File                        | What it controls                     |
-| -------------- | --------------------------- | ------------------------------------ |
-| GTK3           | `~/.config/gtk-3.0/gtk.css` | Most native apps                     |
-| GTK4           | `~/.config/gtk-4.0/gtk.css` | Modern GNOME apps including Nautilus |
-| Firefox (snap) | `chrome/userContent.css`    | Firefox ignores all GTK layers       |
-
-### Key fix: Nautilus sidebar selected text
-
-The sidebar selected item text was Admiral blue instead of white. Root cause:
-`.sidebar-pane placessidebar .navigation-sidebar > row:selected label.sidebar-label`
-was hardcoded to `color: #2354a0` inside the Nordic CSS.
-
-Also: `gtk-dark.css` and `assets` were symlinks pointing to old Graphite-blue-Dark.
-Fixed to point to Nordic.
-
-### How to test CSS changes live
-
-Open Nautilus → press `Ctrl+Shift+D` → CSS tab → type rules live.
-GTK Inspector injects CSS at highest priority — use it to verify selectors
-before writing to files.
-
-### Themes tried and rejected
-
-| Theme                     | Reason                                    |
-| ------------------------- | ----------------------------------------- |
-| `Yaru-prussiangreen-dark` | Too green                                 |
-| `Yaru-purple-dark`        | Too purple                                |
-| `Yaru-blue-dark`          | Not deep enough                           |
-| `Graphite-blue-Dark`      | Accent hardcoded as Google blue `#1A73E8` |
-| `Nordic-darker`           | Kept as fallback variant                  |
 
 ## References
 
