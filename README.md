@@ -58,7 +58,7 @@ dotfiles_config/
     │   └── config.tmpl                     # → ~/.config/ghostty/config (template — font/keys by OS)
     └── nvim/                               # → ~/.config/nvim/ (both platforms)
         ├── init.lua
-        ├── lazy-lock.json                  # IMPORTANT: never run :Lazy update blindly
+        ├── lazy-lock.json                  # IMPORTANT: treesitter must show "branch": "master"
         ├── dot_sqlfluff                    # sqlfluff formatter config
         ├── dot_sqls/
         │   └── config.yml                  # sqls database config (connections: [] — no credentials)
@@ -191,6 +191,14 @@ any change. Verify on both Mac and Linux if possible.
 
 **5. chezmoi.toml missing `os` variable**
 After a `git filter-repo` operation, templates failed with:
+
+**6. `:Lazy update` silently switched treesitter to the archived `main` branch**
+`branch = "master"` was missing from `nvim-treesitter.lua`, so a routine
+`:Lazy update` moved both treesitter plugins to `main`, which has an
+incompatible API. Hours were spent chasing the resulting `configs not found`
+and query errors as if they were config-file or snap problems.
+**Fix:** Both treesitter specs carry `branch = "master"`. After any
+`:Lazy update`, `grep '"nvim-treesitter' lazy-lock.json` must show `master`.
 
 ```
 map has no entry for key "os"
@@ -643,21 +651,34 @@ chezmoi update
 
 - **Plugin manager:** lazy.nvim (auto-bootstraps on first launch)
 - **LSP manager:** Mason
-- **Version:** 0.12.2
+- **Version:** 0.12.x (0.12.5 via snap on Linux, Homebrew on Mac)
 
 **Critical: nvim-treesitter branch pinning**
 
-`nvim-treesitter` was archived April 3, 2026 after a breaking API rewrite.
-Both plugins pinned to `branch = "master"`. **Never run `:Lazy update` without
-checking the treesitter changelog first.**
+`nvim-treesitter` was archived April 3, 2026 after a breaking API rewrite
+(`master` → `main`). The `main` branch has no `nvim-treesitter.configs`
+module, installs parsers to a different location, and ships no `queries/`
+directory — every one of those breaks this config.
 
-If treesitter breaks:
+`branch = "master"` **must** be set in BOTH specs:
+
+- `lua/mikejmnz/plugins/nvim-treesitter.lua`
+- `lua/mikejmnz/plugins/nvim-treesitter-text-objects.lua`
+
+If either spec loses the pin, `:Lazy update` silently switches that plugin to
+`main` and rewrites `lazy-lock.json` with `"branch": "main"`. Check the
+lockfile after any update:
 
 ```bash
-rm -rf ~/.local/share/nvim/lazy/nvim-treesitter
-rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
-# Inside nvim: :Lazy install
+grep '"nvim-treesitter' ~/.config/nvim/lazy-lock.json
+# both lines must say "branch": "master"
 ```
+
+> `nvim-ts-autotag` and `nvim-ts-context-commentstring` on `main` are
+> correct — that is their real default branch. Leave them alone.
+
+**Never run `:Lazy update` without checking the treesitter changelog first.**
+If treesitter breaks, see Troubleshooting → Neovim Treesitter errors.
 
 ---
 
@@ -1040,11 +1061,47 @@ chezmoi apply --force ~/.ssh/config  # or whichever file
 
 ### Neovim Treesitter errors
 
+Symptoms (one or both):
+module 'nvim-treesitter.configs' not found
+Query error at 74:3. Invalid field name "operator" # when opening a .lua file
+
+Cause: a treesitter plugin got switched to the `main` branch (usually by
+`:Lazy update` with a missing `branch = "master"` pin). `main` removed
+`nvim-treesitter.configs`, and the switch leaves stale compiled parsers from
+`master` inside the plugin directory (gitignored, so `git checkout` keeps them).
+Those old parsers get paired with the Neovim runtime's newer Lua query — hence
+the "operator" field error. Refreshing the snap does nothing because the
+offending file is not the snap's.
+
+Confirm the diagnosis:
+
 ```bash
-rm -rf ~/.local/share/nvim/lazy/nvim-treesitter
-rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
-# Inside nvim: :Lazy install
+grep '"nvim-treesitter' ~/.config/nvim/lazy-lock.json     # says "main"?
+ls ~/.local/share/nvim/lazy/nvim-treesitter/lua/nvim-treesitter/  # configs.lua missing?
 ```
+
+Fix:
+
+1. Verify `branch = "master"` is present in both `nvim-treesitter.lua` and
+   `nvim-treesitter-text-objects.lua`.
+2. Remove the checkouts (this also deletes the stale parsers):
+
+```bash
+   rm -rf ~/.local/share/nvim/lazy/nvim-treesitter
+   rm -rf ~/.local/share/nvim/lazy/nvim-treesitter-textobjects
+```
+
+3. Inside nvim: `:Lazy sync` — clones `master`, runs `:TSUpdate` to rebuild
+   parsers, rewrites `lazy-lock.json`.
+4. Sync the corrected lockfile back to the repo:
+
+```bash
+   chezmoi re-add ~/.config/nvim/lazy-lock.json
+```
+
+> Do **not** merge the two treesitter spec files to "fix" this. The split is
+> intentional (one plugin per file); the config-order errors are a symptom of
+> the branch switch, not of the file layout.
 
 ### Wrong git identity being used
 

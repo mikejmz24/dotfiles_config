@@ -1,14 +1,13 @@
 return {
 	"nvim-treesitter/nvim-treesitter-textobjects",
-	lazy = true,
-	event = { "BufReadPre", "BufNewFile" }, -- fixed: was lazy with no trigger
+	branch = "master",
 	config = function()
 		require("nvim-treesitter.configs").setup({
 			modules = {},
 			sync_install = false,
 			ignore_install = {},
 			auto_install = false,
-			ensure_installed = {}, -- empty since nvim-treesitter.lua handles this
+			ensure_installed = {},
 			textobjects = {
 				select = {
 					enable = true,
@@ -18,8 +17,6 @@ return {
 						["i="] = { query = "@assignment.inner", desc = "Select inner part of an assignment" },
 						["l="] = { query = "@assignment.lhs", desc = "Select left hand side of an assignment" },
 						["r="] = { query = "@assignment.rhs", desc = "Select right hand side of an assignment" },
-
-						-- a:/i:/l:/r: removed: require custom JS/TS queries not in your stack
 
 						["aa"] = { query = "@parameter.outer", desc = "Select outer part of a parameter/argument" },
 						["ia"] = { query = "@parameter.inner", desc = "Select inner part of a parameter/argument" },
@@ -50,7 +47,6 @@ return {
 						["<leader>pa"] = "@parameter.inner",
 						["<leader>pm"] = "@function.outer",
 					},
-					-- <leader>n: and <leader>p: removed with JS/TS property queries
 				},
 				move = {
 					enable = true,
@@ -58,7 +54,7 @@ return {
 					goto_next_start = {
 						["]f"] = { query = "@call.outer", desc = "Next function call start" },
 						["]m"] = { query = "@function.outer", desc = "Next method/function def start" },
-						["]k"] = { query = "@class.outer", desc = "Next class start" }, -- fixed: was ]c (git conflict)
+						["]k"] = { query = "@class.outer", desc = "Next class start" },
 						["]i"] = { query = "@conditional.outer", desc = "Next conditional start" },
 						["]l"] = { query = "@loop.outer", desc = "Next loop start" },
 						["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
@@ -67,21 +63,21 @@ return {
 					goto_next_end = {
 						["]F"] = { query = "@call.outer", desc = "Next function call end" },
 						["]M"] = { query = "@function.outer", desc = "Next method/function def end" },
-						["]K"] = { query = "@class.outer", desc = "Next class end" }, -- fixed: was ]C
+						["]K"] = { query = "@class.outer", desc = "Next class end" },
 						["]I"] = { query = "@conditional.outer", desc = "Next conditional end" },
 						["]L"] = { query = "@loop.outer", desc = "Next loop end" },
 					},
 					goto_previous_start = {
 						["[f"] = { query = "@call.outer", desc = "Prev function call start" },
 						["[m"] = { query = "@function.outer", desc = "Prev method/function def start" },
-						["[k"] = { query = "@class.outer", desc = "Prev class start" }, -- fixed: was [c
+						["[k"] = { query = "@class.outer", desc = "Prev class start" },
 						["[i"] = { query = "@conditional.outer", desc = "Prev conditional start" },
 						["[l"] = { query = "@loop.outer", desc = "Prev loop start" },
 					},
 					goto_previous_end = {
 						["[F"] = { query = "@call.outer", desc = "Prev function call end" },
 						["[M"] = { query = "@function.outer", desc = "Prev method/function def end" },
-						["[K"] = { query = "@class.outer", desc = "Prev class end" }, -- fixed: was [C
+						["[K"] = { query = "@class.outer", desc = "Prev class end" },
 						["[I"] = { query = "@conditional.outer", desc = "Prev conditional end" },
 						["[L"] = { query = "@loop.outer", desc = "Prev loop end" },
 					},
