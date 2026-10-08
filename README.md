@@ -1,6 +1,6 @@
 # mikejmz24/dotfiles_config
 
-Cross-platform dotfiles for macOS and Linux (Ubuntu 24.04 / System76 Darter Pro),
+Cross-platform dotfiles for macOS and Linux (Ubuntu 26.04 / System76 Darter Pro),
 managed with [chezmoi](https://www.chezmoi.io/).
 
 ---
@@ -23,8 +23,9 @@ This README is written for two audiences:
 - **No clever hacks** — if it needs a custom README to understand, it's too complex
 - **Keyboard first** — every tool is configured for keyboard-driven workflows
 - **Documented** — every decision is explained so future-you (and future AI) knows why
-- **chezmoi manages everything** — no manual symlinks, no custom install scripts,
-  no fragile one-liners. One command to deploy on any machine.
+- **chezmoi manages every config file** — no manual symlinks, no fragile one-liners.
+  One install script per platform bootstraps a new machine; after that,
+  `chezmoi update` is the only command needed.
 - **Validate before commit** — always run the validation checklist before pushing
 
 ---
@@ -41,12 +42,15 @@ This README is written for two audiences:
 ## Repo Structure
 
 ```
-dotfiles_config/
-├── README.md                               # This file — read before anything else
-├── Brewfile                                # Mac packages (managed by chezmoi → ~/Brewfile)
-├── install-mac.sh                          # Mac full setup script (run once on fresh install)
-├── install-linux.sh                        # Linux full setup script (run once on fresh install)
-├── linux-gnome-settings.sh                 # Linux-only: GNOME customizations (run manually)
+dotfiles_config/                            # cloned to ~/.local/share/chezmoi (chezmoi's source dir)
+├── README.md                               # This file — read before anything else (repo only)
+├── .chezmoiignore                          # What NOT to deploy, per OS (template — uses .os)
+├── Brewfile                                # Mac packages → ~/Brewfile (Mac only)
+├── install-mac.sh                          # Mac full setup script (repo only — run from source dir)
+├── install-linux.sh                        # Linux full setup script (repo only — run from source dir)
+├── linux-gnome-settings.sh                 # GNOME customizations (repo only — called by install-linux.sh)
+├── Documents/
+│   └── nordic-theme-reference.css          # → ~/Documents/ (Linux only) — Nordic override notes
 ├── dot_gitconfig.tmpl                      # → ~/.gitconfig (template — switches identity by OS)
 ├── dot_gitignore_global                    # → ~/.gitignore_global (both platforms)
 ├── dot_zshrc                               # → ~/.zshrc (both platforms)
@@ -56,6 +60,8 @@ dotfiles_config/
 └── dot_config/
     ├── ghostty/
     │   └── config.tmpl                     # → ~/.config/ghostty/config (template — font/keys by OS)
+    ├── private_gtk-3.0/gtk.css             # → ~/.config/gtk-3.0/gtk.css (Linux only — Nordic accent)
+    ├── private_gtk-4.0/gtk.css             # → ~/.config/gtk-4.0/gtk.css (Linux only — Nordic + fixes)
     └── nvim/                               # → ~/.config/nvim/ (both platforms)
         ├── init.lua
         ├── lazy-lock.json                  # IMPORTANT: treesitter must show "branch": "master"
@@ -95,6 +101,11 @@ dotfiles_config/
                     └── which-key.lua
 ```
 
+> **"Repo only" files** stay in `~/.local/share/chezmoi` and are listed in
+> `.chezmoiignore`, so `chezmoi apply` never copies them into `~`. Run the
+> scripts from the source dir. There is no `.config/` folder in the source —
+> chezmoi ignores dot-prefixed source entries, so configs live in `dot_config/`.
+
 ---
 
 ## What Is NOT In This Repo
@@ -112,7 +123,6 @@ dotfiles_config/
 | `~/.config/fish/`                | Not actively used.                                                                                         |
 | `~/.config/zed/`                 | Not actively used.                                                                                         |
 | `~/.config/iterm2/`              | Replaced by Ghostty.                                                                                       |
-| `~/.config/gh/hosts.yml`         | Auth tokens — never commit.                                                                                |
 
 ---
 
@@ -127,6 +137,7 @@ username in a public repo. The checklist below prevents both.
 chezmoi execute-template < ~/.local/share/chezmoi/private_dot_ssh/config.tmpl
 chezmoi execute-template < ~/.local/share/chezmoi/dot_config/ghostty/config.tmpl
 chezmoi execute-template < ~/.local/share/chezmoi/dot_gitconfig.tmpl
+chezmoi execute-template < ~/.local/share/chezmoi/.chezmoiignore
 
 # 2. Dry run — see what chezmoi WOULD deploy without doing it
 chezmoi apply --dry-run --verbose
@@ -192,6 +203,13 @@ any change. Verify on both Mac and Linux if possible.
 **5. chezmoi.toml missing `os` variable**
 After a `git filter-repo` operation, templates failed with:
 
+```
+map has no entry for key "os"
+```
+
+**Fix:** Always verify `~/.config/chezmoi/chezmoi.toml` exists with the correct
+`os` variable before running `chezmoi apply` on any machine.
+
 **6. `:Lazy update` silently switched treesitter to the archived `main` branch**
 `branch = "master"` was missing from `nvim-treesitter.lua`, so a routine
 `:Lazy update` moved both treesitter plugins to `main`, which has an
@@ -200,12 +218,15 @@ and query errors as if they were config-file or snap problems.
 **Fix:** Both treesitter specs carry `branch = "master"`. After any
 `:Lazy update`, `grep '"nvim-treesitter' lazy-lock.json` must show `master`.
 
-```
-map has no entry for key "os"
-```
-
-**Fix:** Always verify `~/.config/chezmoi/chezmoi.toml` exists with the correct
-`os` variable before running `chezmoi apply` on any machine.
+**7. Repo files deployed into `~` and a shadow `.config/` in the source**
+Without `.chezmoiignore` entries, `chezmoi apply` copied `README.md` and the
+install scripts into `~`, where they silently drifted from the repo. Separately,
+a plain `.config/` folder (copied in by hand) sat next to `dot_config/`.
+chezmoi ignores dot-prefixed source entries, so it was never deployed — but it
+got edited by mistake instead of the real file.
+**Fix:** Repo-only files are listed in `.chezmoiignore`. Add configs only with
+`chezmoi add` / `chezmoi re-add`, never by copying into the source dir.
+`chezmoi status` on a clean machine should print nothing.
 
 ### Scrubbing Sensitive Data from Git History
 
@@ -438,16 +459,27 @@ ssh -T git@github.com  # or git@github-personal on Mac
 ## Quick Start — Fresh Mac Install
 
 ```bash
-git clone https://github.com/mikejmz24/dotfiles_config.git ~/dotfiles_config
-bash ~/dotfiles_config/install-mac.sh
+# Clone straight into chezmoi's source dir. On a fresh Mac, `git` prompts to
+# install the Xcode Command Line Tools first — accept, then re-run this line.
+git clone https://github.com/mikejmz24/dotfiles_config.git ~/.local/share/chezmoi
+bash ~/.local/share/chezmoi/install-mac.sh
 ```
 
 See `install-mac.sh` for full details. Install order matters:
 
-1. Xcode CLI Tools → 2. Homebrew → 3. chezmoi → 4. `chezmoi.toml` (manual)
-   → 5. SSH key (manual) → 6. `chezmoi apply` → 7. Oh My Zsh
+1. Xcode CLI Tools → 2. Homebrew → 3. chezmoi → 4. `chezmoi.toml` (manual, `nano`)
+   → 5. SSH key (manual) → 6. `chezmoi apply` → 7. Oh My Zsh + zsh plugins
    → 8. `brew bundle install` → 9. `rustup-init` → 10. Go tools
-   → 11. Python tools → 12. `~/.gitconfig-work` (manual)
+   → 11. Python tools (pipx + pynvim) → 12. `~/.gitconfig-work` (manual)
+
+The repo is cloned over HTTPS. Once your SSH key is on GitHub, switch the remote
+so you can push:
+
+```bash
+git -C ~/.local/share/chezmoi remote set-url origin git@github-personal:mikejmz24/dotfiles_config.git
+```
+
+The script is safe to re-run — finished steps are skipped.
 
 ---
 
@@ -455,31 +487,41 @@ See `install-mac.sh` for full details. Install order matters:
 
 ```bash
 chezmoi update
-brew bundle install --file=~/Brewfile
+brew bundle install --file="$HOME/Brewfile"   # "$HOME", not "~" — bash won't expand ~ after --file=
 # Update Brewfile to reflect current state
-brew bundle dump --force --file=~/Brewfile
-chezmoi add ~/Brewfile
+brew bundle dump --force --file="$HOME/Brewfile"
+chezmoi re-add ~/Brewfile
 cd ~/.local/share/chezmoi
 git add -A && git commit -m "Update Brewfile" && git push
 ```
 
 ---
 
-## Quick Start — New Linux (Ubuntu 24.04 / System76 Darter Pro)
+## Quick Start — New Linux (Ubuntu 26.04 / System76 Darter Pro)
 
 ```bash
-# Create machine config first (never committed)
-mkdir -p ~/.config/chezmoi
-nvim ~/.config/chezmoi/chezmoi.toml  # paste Linux toml from above
+# git is not preinstalled on Ubuntu Desktop
+sudo apt update && sudo apt install -y git
 
-git clone https://github.com/mikejmz24/dotfiles_config.git ~/dotfiles_config
-bash ~/dotfiles_config/install-linux.sh
+# Create machine config first (never committed). nano is preinstalled;
+# Neovim isn't installed until the script runs.
+mkdir -p ~/.config/chezmoi
+nano ~/.config/chezmoi/chezmoi.toml  # paste Linux toml from above
+
+# Clone straight into chezmoi's source dir and run the script from there
+git clone https://github.com/mikejmz24/dotfiles_config.git ~/.local/share/chezmoi
+bash ~/.local/share/chezmoi/install-linux.sh
 ```
 
-After install, run GNOME settings:
+The script also applies the GNOME settings and the Nordic theme, and prints
+the remaining manual steps at the end (SSH key, switching the dotfiles remote
+from HTTPS to SSH, GNOME extensions). It stops right away if `chezmoi.toml` is
+missing, and it is safe to re-run.
+
+To re-apply only the GNOME settings later:
 
 ```bash
-bash ~/dotfiles_config/linux-gnome-settings.sh
+bash ~/.local/share/chezmoi/linux-gnome-settings.sh
 ```
 
 ---
@@ -698,8 +740,8 @@ If treesitter breaks, see Troubleshooting → Neovim Treesitter errors.
   - `/Library/TeX/texbin` — MacTeX (Mac only)
   - `$HOME/.local/share/nvim/mason/bin` — Mason binaries (both)
 
-> **Installing Zsh plugins on a new machine:** Plugins must be cloned into
-> the Oh My Zsh custom plugins directory before `chezmoi apply` so the
+> **Installing Zsh plugins on a new machine:** both install scripts clone them.
+> To do it by hand, clone into the Oh My Zsh custom plugins directory so the
 > `.zshrc` plugins array can find them:
 >
 > ```bash
@@ -715,10 +757,10 @@ If treesitter breaks, see Troubleshooting → Neovim Treesitter errors.
 
 ### GNOME Settings (`linux-gnome-settings.sh`)
 
-Run after fresh install:
+Run automatically by `install-linux.sh`. To re-run on its own:
 
 ```bash
-bash ~/dotfiles_config/linux-gnome-settings.sh
+bash ~/.local/share/chezmoi/linux-gnome-settings.sh
 ```
 
 **What it does:**
@@ -791,7 +833,7 @@ Removed during fresh install to keep the system lean:
 | Removed                                                    | Reason                                                                                    |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `cheese`, `totem`, `example-content`                       | Webcam app, video player, sample content — not needed                                     |
-| `thunderbird*`                                             | Web-based email only. Shipped as Snap on Ubuntu 24.04 — removed via both `apt` and `snap` |
+| `thunderbird*`                                             | Web-based email only. Ships as a Snap on Ubuntu — removed via both `apt` and `snap`    |
 | `firefox`                                                  | Using Chromium instead (Wayland compatibility on System76)                                |
 | `libreoffice*`                                             | Google Docs/Sheets/Slides used instead                                                    |
 | CJK input methods (`ibus-chewing`, `ibus-libpinyin`, etc.) | English and Spanish only                                                                  |
@@ -828,8 +870,9 @@ dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
 Required because disabling `ubuntu-dock` falls back to GNOME's built-in dash
 which can only be hidden via this extension. Hides dock from Activities overview.
 
-> **Install extensions BEFORE running `linux-gnome-settings.sh`** — the script
-> uses `dconf` commands that require Just Perfection to be installed first.
+> **Order doesn't matter:** `linux-gnome-settings.sh` writes the Just Perfection
+> keys with `dconf`, which stores them even before the extension is installed.
+> They take effect as soon as Just Perfection is enabled.
 
 ### App Launcher
 
@@ -860,6 +903,34 @@ The Darter Pro 11 has **three** video-capable outputs:
 > **Scaling:** A 32" 4K external comes up on the `HDMI-A-1` output and looks
 > too small at 100%. See Display Scaling above — set it to 150%.
 
+### Closing the Lid (External Monitor Only)
+
+**No configuration needed.** The defaults already do the right thing:
+
+- systemd-logind: `HandleLidSwitchDocked=ignore` — with more than one display
+  connected, closing the lid does nothing
+- GNOME: `lid-close-suspend-with-external-monitor` is `false`, and `gsd-power`
+  blocks the lid switch while an external monitor is attached
+- No monitor attached → closing the lid suspends (wanted when traveling)
+
+Check it any time with:
+
+```bash
+systemd-inhibit --list --mode=block | grep handle-lid-switch   # gsd-power, "External monitor"
+systemd-analyze cat-config systemd/logind.conf | grep -i lid    # only commented defaults
+```
+
+> **Do not** add `/etc/systemd/logind.conf.d/` lid overrides or `xrandr`
+> lid scripts. A September 2026 attempt did both: the override only changed the
+> no-monitor case (stopped suspending in the bag), and `xrandr` cannot manage
+> monitors under Wayland (it only sees XWayland). Both were removed.
+
+**Known issue — windows move when the lid closes or opens.** GNOME turns off the
+built-in display and Mutter relocates windows to the remaining monitor. This is
+long-standing upstream Mutter behavior on Wayland, not a setting. If it gets
+annoying, a GNOME Shell extension that saves and restores window positions on
+monitor changes (e.g. "Window State Manager") is the practical workaround.
+
 ### System76 Driver and Firmware
 
 ```bash
@@ -873,6 +944,10 @@ sudo system76-firmware-cli schedule
 
 Provides hardware integration, power management, keyboard backlight,
 and battery extensions specific to the Darter Pro 11.
+
+> `system76-driver` comes from the System76 apt repository, which ships with
+> System76's factory Ubuntu image. `install-linux.sh` installs it only when that
+> repository is configured and prints a warning otherwise.
 
 ---
 
@@ -895,7 +970,7 @@ and battery extensions specific to the Darter Pro 11.
 | Font install      | Brewfile                          | curl to `~/.local/share/fonts`                           |
 | Neovim            | `brew install neovim`             | `snap install nvim --classic`                            |
 | Ghostty           | Brewfile                          | `snap install ghostty --classic`                         |
-| chezmoi           | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)"`                   |
+| chezmoi           | `brew install chezmoi`            | `sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/bin`       |
 | External monitor  | Any USB-C/HDMI                    | HDMI port or Thunderbolt 4 (⚡) only                     |
 | Zsh plugins       | Installed via Oh My Zsh           | Same — clone to `~/.oh-my-zsh/custom/plugins/`           |
 | chezmoi PATH      | Automatic                         | Add `$HOME/bin` manually                                 |
@@ -909,21 +984,32 @@ and battery extensions specific to the Darter Pro 11.
 
 ---
 
-## Desktop Theming (Linux / Ubuntu 24.04)
+## Desktop Theming (Linux / Ubuntu 26.04)
 
 ### Theme: Nordic dark with Admiral accent `#2354a0`
 
 Nordic is a dark GTK theme. We override its default teal accent with Admiral
 navy `#2354a0` across all GTK layers and Nautilus.
 
-### What `install-linux.sh` does automatically
+### Where each piece lives
 
-1. Sets Nordic as the GTK theme via `gsettings`
-2. Copies Nordic's `gtk.css` to `~/.config/gtk-4.0/gtk.css`
-3. Fixes symlinks — `gtk-dark.css` and `assets` point to Nordic (not Graphite)
-4. Fixes sidebar selected text — hardcoded `color: #2354a0` changed to `#ffffff`
-5. Appends Nautilus sidebar + file grid selection overrides
-6. Writes `~/.config/gtk-3.0/gtk.css` with selection color
+| Piece                                            | Managed by                                     |
+| ------------------------------------------------ | ---------------------------------------------- |
+| `~/.config/gtk-4.0/gtk.css` (Nordic + all fixes) | chezmoi (`dot_config/private_gtk-4.0/`)        |
+| `~/.config/gtk-3.0/gtk.css` (selection color)    | chezmoi (`dot_config/private_gtk-3.0/`)        |
+| Nordic theme files (`~/.local/share/themes/`)    | `install-linux.sh` — downloads latest if missing |
+| `gtk-dark.css` / `assets` symlinks → Nordic      | `install-linux.sh`                             |
+| `gtk-theme` + `color-scheme` gsettings           | `install-linux.sh`                             |
+
+The sidebar text fix and the Nautilus overrides below are already baked into the
+tracked `gtk.css` — the script never edits it. Both GTK css files are Linux only
+(`.chezmoiignore`).
+
+> **Nordic version:** the tracked `gtk-4.0/gtk.css` was taken from the Nordic
+> version installed in 2026, which differs from the latest release. On a fresh
+> machine the script installs the latest release; the tracked css still applies
+> on top, but check Nautilus once and re-copy the theme from the old machine if
+> anything looks off.
 
 ### Key colors
 
@@ -955,7 +1041,8 @@ Fixed to point to Nordic.
 
 Open Nautilus → press `Ctrl+Shift+D` → CSS tab → type rules live.
 GTK Inspector injects CSS at highest priority — use it to verify selectors
-before writing to files.
+before writing to files. After editing `~/.config/gtk-4.0/gtk.css`, save it
+back to the repo with `chezmoi re-add ~/.config/gtk-4.0/gtk.css`.
 
 ### Themes tried and rejected
 
@@ -1135,19 +1222,26 @@ sudo apt install wl-clipboard
 mkdir -p ~/.local/bin && ln -s $(which fdfind) ~/.local/bin/fd
 ```
 
-### Old Mac configs appearing in chezmoi on Linux
+### A `.config/` folder appeared in the chezmoi source
 
-If `fish`, `gh`, `iterm2`, `uv`, `zed` appear in `~/.local/share/chezmoi/.config/`:
+chezmoi ignores dot-prefixed source entries, so nothing in
+`~/.local/share/chezmoi/.config/` is ever deployed (see Pitfall 7). Add real
+configs with `chezmoi add ~/.config/<app>/<file>` (they land in `dot_config/`),
+then remove the stray folder:
 
 ```bash
-rm -rf ~/.local/share/chezmoi/.config/fish
-rm -rf ~/.local/share/chezmoi/.config/gh
-rm -rf ~/.local/share/chezmoi/.config/iterm2
-rm -rf ~/.local/share/chezmoi/.config/uv
-rm -rf ~/.local/share/chezmoi/.config/zed
+git -C ~/.local/share/chezmoi rm -r .config
 ```
 
-These are Mac-only configs that should be excluded via `.chezmoiignore`.
+### `chezmoi status` shows README.md or install scripts
+
+`.chezmoiignore` is missing their entries. They are repo-only files; after
+fixing the ignore file, delete any copies that were already deployed to `~`.
+
+### Windows jump to other monitors when closing/opening the lid
+
+Expected Mutter behavior on Wayland — see Linux Desktop Configuration →
+Closing the Lid. Not caused by logind settings.
 
 ### Oh My Zsh overwrote `.zshrc`
 
@@ -1193,7 +1287,7 @@ sudo apt update 2>&1 | grep system76  # check if back online
 ## Hardware
 
 - **Mac:** MacBook (ARM, Apple Silicon) — work machine
-- **Linux:** System76 Darter Pro 11 (`darp11`), Ubuntu 24.04 LTS, GNOME/Wayland
+- **Linux:** System76 Darter Pro 11 (`darp11`), Ubuntu 26.04 LTS, GNOME 50 (Wayland-only)
   - Built-in display: 16" 1920×1200 (~141 PPI), Intel Arc graphics
   - External: 32" 4K (3840×2160) on `HDMI-A-1`, scaled to 150%
 
