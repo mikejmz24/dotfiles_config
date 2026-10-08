@@ -3,13 +3,14 @@
 # mikejmz24
 #
 # Usage:
-#   brew bundle install --file=~/Brewfile
+#   brew bundle install --file="$HOME/Brewfile"
 #
 # To update this file after installing something new:
-#   brew bundle dump --force --file=~/Brewfile
+#   brew bundle dump --force --file="$HOME/Brewfile"
+#   chezmoi re-add ~/Brewfile
 #
-# This file is NOT managed by chezmoi — it lives at ~/Brewfile and is
-# Mac-only. Linux uses install-linux.sh instead.
+# Managed by chezmoi, deployed to ~/Brewfile on the Mac only (Linux ignores it
+# via .chezmoiignore). Linux packages live in install-linux.sh instead.
 # =============================================================================
 
 # =============================================================================
@@ -66,7 +67,7 @@ brew "jupyterlab"   # Web-based interactive Python notebook environment. Used fo
 # These are also available via Mason in Neovim.
 # =============================================================================
 
-go "github.com/cosmtrek/air"            # Live reload for Go apps during development.
+go "github.com/air-verse/air"           # Live reload for Go apps (moved from cosmtrek/air).
 go "github.com/melkeydev/go-blueprint"  # Go project scaffolding tool with best practices.
 go "github.com/cucumber/godog/cmd/godog" # Go BDD testing framework (Cucumber for Go).
 go "golang.org/x/tools/gopls"           # Official Go language server. Used by Neovim Mason.

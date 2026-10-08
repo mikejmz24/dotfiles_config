@@ -1,3 +1,27 @@
+# .chezmoiignore — patterns match TARGET paths (what lands in ~), not source
+# names. Write ".config/foo", never "dot_config/foo" or "private_foo".
+# `.os` comes from ~/.config/chezmoi/chezmoi.toml ("mac" or "linux").
+
+# Repo files — stay in the repo, run from ~/.local/share/chezmoi, never copied to ~
+README.md
+install-linux.sh
+install-mac.sh
+linux-gnome-settings.sh
+
+# Brewfile — Mac only. install-mac.sh and the Mac restore flow use ~/Brewfile.
+{{ if ne .os "mac" }}
+Brewfile
+{{ end }}
+
+# Nordic GTK theming — Ubuntu only
+{{ if ne .os "linux" }}
+.config/gtk-3.0
+.config/gtk-3.0/**
+.config/gtk-4.0
+.config/gtk-4.0/**
+Documents/nordic-theme-reference.css
+{{ end }}
+
 # Work credentials — never commit
 .gitconfig-work
 
@@ -22,21 +46,3 @@ Library/Application Support/Code/User/History/**
 
 # VSCode — extensions are machine-specific, never commit
 .vscode/**
-
-# Firefox snap — Linux only, ignore on Mac
-{{ if ne .chezmoi.os "linux" }}
-private_snap/**
-{{ end }}
-
-# Firefox profile — only track chrome/userContent.css, ignore everything else
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/Cache*
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/lock
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/storage*
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/sessionstore*
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/crashes*
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/minidumps*
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/datareporting*
-private_snap/firefox/common/private_dot_mozilla/private_firefox/private_61l30d9g.default/saved-telemetry-pings*
-
-# Firefox snap — handled by install-linux.sh, not tracked by chezmoi
-private_snap/**
