@@ -1,3 +1,8 @@
+#!/bin/bash
+# linux-gnome-settings.sh — GNOME customizations for Ubuntu (called by
+# install-linux.sh; safe to run on its own, any number of times).
+# Not `set -e`: one missing extension shouldn't skip the remaining settings.
+
 # =============================================================================
 # APP LAUNCHER
 # pop-launcher (System76) was the original plan — it's a Spotlight-like
@@ -37,7 +42,9 @@ gsettings set org.gnome.desktop.wm.keybindings toggle-fullscreen "['<Super>f']"
 # =============================================================================
 # DOCK — Completely hidden, never visible
 # ubuntu-dock disabled — falls back to GNOME built-in dash
-# Just Perfection extension used to hide the built-in dash from Activities
+# Just Perfection extension used to hide the built-in dash from Activities.
+# dconf stores these keys even before the extension is installed; they take
+# effect once Just Perfection is enabled.
 # =============================================================================
 gnome-extensions disable ubuntu-dock@ubuntu.com
 dconf write /org/gnome/shell/extensions/just-perfection/dash false
@@ -48,15 +55,15 @@ dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
 # ── Workspace keybindings ──────────────────────────────
 # Clear Super+1-9 from dash app launcher
 for i in {1..9}; do
-  gsettings set org.gnome.shell.keybindings switch-to-application-$i '[]'
+  gsettings set org.gnome.shell.keybindings switch-to-application-"$i" '[]'
 done
 
 # Super+1-9 → switch to workspace
 for i in {1..9}; do
-  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-$i "['<Super>$i']"
+  gsettings set org.gnome.desktop.wm.keybindings switch-to-workspace-"$i" "['<Super>$i']"
 done
 
 # Super+Shift+1-9 → move window to workspace
 for i in {1..9}; do
-  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-$i "['<Super><Shift>$i']"
+  gsettings set org.gnome.desktop.wm.keybindings move-to-workspace-"$i" "['<Super><Shift>$i']"
 done

@@ -1,18 +1,26 @@
 #!/bin/bash
 # =============================================================================
 # install-linux.sh
-# Ubuntu 24.04 / System76 Darter Pro — Full Development Environment Setup
+# Ubuntu 26.04 / System76 Darter Pro — Full Development Environment Setup
 #
 # Run this script after a fresh Ubuntu install to set up your full dev
 # environment. It installs everything in the correct dependency order.
 #
-# Usage:
-#   bash install-linux.sh
+# Usage (from the README quick start — the repo is cloned straight into
+# chezmoi's source directory, and the script runs from there):
+#   bash ~/.local/share/chezmoi/install-linux.sh
 #
-# Safe to re-run — most steps are idempotent.
+# Prerequisite: ~/.config/chezmoi/chezmoi.toml must exist (see README).
+#
+# Safe to re-run — every step checks whether it is already done.
 # =============================================================================
 
 set -e  # Exit on any error
+
+# Directory this script lives in (the chezmoi source dir) — used to find
+# linux-gnome-settings.sh next to it.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_URL="https://github.com/mikejmz24/dotfiles_config.git"
 
 echo ""
 echo "============================================="
@@ -21,9 +29,54 @@ echo "============================================="
 echo ""
 
 # =============================================================================
+# SECTION 0: PRE-FLIGHT — chezmoi.toml
+# chezmoi templates need the `os` variable from this machine-specific file.
+# Check it first so the script fails in second 1, not halfway through.
+# =============================================================================
+
+if ! grep -qs 'os *= *"linux"' ~/.config/chezmoi/chezmoi.toml; then
+  echo "❌ ~/.config/chezmoi/chezmoi.toml is missing or has no os = \"linux\"."
+  echo ""
+  echo "Create it first (nano is preinstalled on Ubuntu):"
+  echo ""
+  echo "  mkdir -p ~/.config/chezmoi"
+  echo "  nano ~/.config/chezmoi/chezmoi.toml"
+  echo ""
+  echo "Content (fill in your values):"
+  echo ""
+  echo "  [data]"
+  echo "      name = \"Your Name\""
+  echo "      email = \"YOUR_ID+mikejmz24@users.noreply.github.com\""
+  echo "      github_user = \"mikejmz24\""
+  echo "      os = \"linux\""
+  echo ""
+  exit 1
+fi
+echo "✅ chezmoi.toml found"
+
+# =============================================================================
 # SECTION 1: APT PACKAGES
 # Core system utilities installed via apt.
 # These must be installed first as other tools depend on them.
+#
+# Note: comments must NOT follow a trailing backslash — "pkg \  # comment"
+# ends the command there. Each package is explained above the list instead.
+#
+#   git              Version control. Required by chezmoi, nvim plugins, Oh My Zsh.
+#   curl             HTTP client. Downloads chezmoi, Oh My Zsh, Nerd Fonts, Nordic.
+#   zsh              Shell. Replaces bash. Required before Oh My Zsh can be installed.
+#   xz-utils         .xz / .tar.xz extraction (Nordic theme, other downloads).
+#   ripgrep          (rg) Fast content search. Required by Telescope.
+#   tree             Directory structure as a tree.
+#   jq               Command-line JSON processor. Required by jq-lsp.
+#   golang           Go runtime. Required by gopls, gofumpt, goimports, sqls, jq-lsp.
+#   nodejs, npm      JS runtime + package manager. Required by Mason's JS-based LSPs.
+#   python3          Required by pyright, black, isort, pylint, sqlfluff.
+#   python3-pip      Installs the Python tools in section 10.
+#   python3-venv     Required by Mason's Python tooling.
+#   wl-clipboard     Wayland clipboard (wl-copy/wl-paste) for Neovim.
+#   fd-find          (fdfind on Ubuntu) Fast file finder. Required by Telescope.
+#   chromium-browser Browser. Used instead of Firefox (Wayland issues on System76).
 # =============================================================================
 
 echo "→ Installing apt packages..."
@@ -31,47 +84,28 @@ echo "→ Installing apt packages..."
 sudo apt update
 
 sudo apt install -y \
-  git \          # Version control. Required by chezmoi, nvim plugins, and everything else.
-  curl \         # HTTP client. Required to download chezmoi, Oh My Zsh, and Nerd Fonts.
-  zsh \          # Shell. Replaces bash. Required before Oh My Zsh can be installed.
-  xz-utils \    # Compression/decompression for .xz and .tar.xz files. Often needed when extracting downloaded software.
-  ripgrep \      # (rg) Extremely fast file content search. Required by Telescope (nvim fuzzy finder).
-  tree \         # Displays directory structure as a visual tree. Useful for navigating projects.
-  jq \           # Command-line JSON processor. Required by jq-lsp in Neovim.
-  golang \       # Go programming language runtime. Required by gopls, gofumpt, goimports, gomodifytags, sqls, jq-lsp.
-  nodejs \       # JavaScript runtime. Required by html-lsp, css-lsp, prettier, pyright (Mason installs).
-  npm \          # Node package manager. Installed alongside nodejs. Required by Mason for JS-based LSPs.
-  python3 \      # Python 3 interpreter. Required by pyright, black, isort, pylint, sqlfluff.
-  python3-pip \  # Python package installer. Required to install pyright, black, isort, pylint, pynvim.
-  python3-venv \ # Python virtual environment support. Required by Mason's Python tooling.
-  wl-clipboard \ # Wayland clipboard provider. Required by Neovim clipboard integration (wl-copy/wl-paste).
-  fd-find \      # (fdfind on Ubuntu) Fast file finder. Required by Telescope for extended file search capabilities.
-  chromium-browser # Web browser. Chromium is used instead of Firefox due to Wayland compatibility issues on System76.
+  git \
+  curl \
+  zsh \
+  xz-utils \
+  ripgrep \
+  tree \
+  jq \
+  golang \
+  nodejs \
+  npm \
+  python3 \
+  python3-pip \
+  python3-venv \
+  wl-clipboard \
+  fd-find \
+  chromium-browser
 
 echo "✅ apt packages installed"
 
 # =============================================================================
-# SECTION 2: fd SYMLINK
-# Ubuntu names the fd binary 'fdfind' to avoid conflicts with another package.
-# We create a symlink so every tool that calls 'fd' finds it correctly.
-# This is a symlink, not an alias — works system-wide for all apps and scripts.
-# =============================================================================
-
-echo "→ Setting up fd symlink..."
-
-mkdir -p ~/.local/bin
-ln -sf $(which fdfind) ~/.local/bin/fd
-
-# Add ~/.local/bin to PATH if not already there
-if ! grep -q 'HOME/.local/bin' ~/.zshrc; then
-  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-fi
-
-echo "✅ fd symlink created at ~/.local/bin/fd"
-
-# =============================================================================
-# SECTION 1b: REMOVE PRE-INSTALLED BLOAT
-# Ubuntu 24.04 ships with several apps and language packs that are not needed
+# SECTION 2: REMOVE PRE-INSTALLED BLOAT
+# Ubuntu ships with several apps and language packs that are not needed
 # for this setup. Removing them keeps the system lean and performant.
 #
 # Safe to re-run — apt remove is idempotent.
@@ -80,17 +114,18 @@ echo "✅ fd symlink created at ~/.local/bin/fd"
 echo "→ Removing pre-installed bloat..."
 
 # Webcam app and video player — not needed, using web browser for media
-sudo apt remove --purge cheese totem example-content 2>/dev/null || true
+sudo apt remove --purge -y cheese totem example-content 2>/dev/null || true
 
-# Thunderbird — using web-based email instead
+# Thunderbird — using web-based email instead (ships as apt AND snap)
 # LibreOffice — using Google Docs/Sheets/Slides instead
-sudo apt remove --purge 'thunderbird*' 'libreoffice*' 2>/dev/null || true
+sudo apt remove --purge -y 'thunderbird*' 'libreoffice*' 2>/dev/null || true
+sudo snap remove thunderbird 2>/dev/null || true
 
 # Firefox — using Chromium instead (Wayland compatibility)
-sudo apt remove --purge firefox 'firefox*' 2>/dev/null || true
+sudo apt remove --purge -y firefox 'firefox*' 2>/dev/null || true
 
 # CJK input methods — English and Spanish only
-sudo apt remove --purge \
+sudo apt remove --purge -y \
   ibus-chewing ibus-libpinyin ibus-m17n \
   'ibus-table-cangjie*' ibus-table-wubi ibus-table-quick-classic \
   libchewing3 libchewing3-data libpinyin-data libpinyin15 \
@@ -98,7 +133,7 @@ sudo apt remove --purge \
   libmarisa0 fonts-arphic-ukai fonts-arphic-uming 2>/dev/null || true
 
 # Non-ES/EN language packs — keeping English and Spanish only
-sudo apt remove --purge \
+sudo apt remove --purge -y \
   language-pack-de language-pack-de-base \
   language-pack-fr language-pack-fr-base \
   language-pack-it language-pack-it-base \
@@ -115,7 +150,7 @@ sudo apt remove --purge \
   gnome-user-docs-ru gnome-user-docs-pt gnome-user-docs-zh-hans 2>/dev/null || true
 
 # Spell/hyphen/thesaurus for unused languages
-sudo apt remove --purge \
+sudo apt remove --purge -y \
   hyphen-de hyphen-fr hyphen-it hyphen-ru \
   hyphen-pt-br hyphen-pt-pt hyphen-en-ca hyphen-en-gb \
   mythes-de mythes-de-ch mythes-fr mythes-it \
@@ -126,315 +161,237 @@ sudo apt autoremove -y && sudo apt clean
 echo "✅ Bloat removed"
 
 # =============================================================================
-# SECTION 3: SNAP PACKAGES
+# SECTION 3: fd SYMLINK
+# Ubuntu names the fd binary 'fdfind' to avoid conflicts with another package.
+# We create a symlink so every tool that calls 'fd' finds it correctly.
+# ~/.local/bin is already on PATH via the chezmoi-managed ~/.zshrc.
+# =============================================================================
+
+echo "→ Setting up fd symlink..."
+
+mkdir -p ~/.local/bin
+ln -sf "$(command -v fdfind)" ~/.local/bin/fd
+
+echo "✅ fd symlink created at ~/.local/bin/fd"
+
+# =============================================================================
+# SECTION 4: SNAP PACKAGES
 # Applications installed via Snap. These are sandboxed and auto-updating.
-# Snap is pre-installed on Ubuntu.
 #
 # Why Snap for Ghostty and Neovim?
 # - The Ubuntu apt versions are outdated (Neovim 0.9.x vs current 0.12.x)
-# - The System76 PPA was unavailable during setup (outage)
 # - Snap provides the latest stable versions automatically
+# --classic: both need full filesystem / GPU / shell access
 # =============================================================================
 
 echo "→ Installing Snap packages..."
-
-# Ghostty — GPU-accelerated terminal emulator
-# Publisher: Ken VanDine (✪ verified)
-# --classic flag required: Ghostty needs full system access for GPU and shell integration
 sudo snap install ghostty --classic
-
-# Neovim — Hyperextensible text editor
-# Using Snap to get latest version (0.12.x)
-# --classic flag required: Neovim needs full filesystem access
 sudo snap install nvim --classic
-
 echo "✅ Snap packages installed"
 
 # =============================================================================
-# SECTION 4: ZSH + OH MY ZSH
-# Oh My Zsh must be installed AFTER zsh but BEFORE chezmoi applies .zshrc,
-# because .zshrc references $ZSH (the Oh My Zsh install directory).
-# =============================================================================
-
-echo "→ Setting Zsh as default shell..."
-chsh -s $(which zsh)
-echo "✅ Zsh set as default shell (takes effect after logout/login)"
-
-echo "→ Installing Oh My Zsh..."
-# --unattended flag skips the interactive prompt
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-echo "✅ Oh My Zsh installed"
-
-# =============================================================================
-# SECTION 5: ZSH PLUGINS
-# Must be installed AFTER Oh My Zsh so the custom plugins directory exists.
-# zsh-autosuggestions: grey suggestions from history, press → to accept
-# zsh-syntax-highlighting: colors commands green (valid) or red (invalid)
-# =============================================================================
-
-echo "→ Installing Zsh plugins..."
-git clone https://github.com/zsh-users/zsh-autosuggestions \
-  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-git clone https://github.com/zsh-users/zsh-syntax-highlighting \
-  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-echo "✅ Zsh plugins installed"
-
-# =============================================================================
-# SECTION 6: CHEZMOI
-# Dotfile manager. Installed after Zsh so chezmoi can apply .zshrc correctly.
-# Installs to ~/bin/ — we add this to PATH.
-# =============================================================================
-
-echo "→ Installing chezmoi..."
-sh -c "$(curl -fsLS get.chezmoi.io)"
-
-# Add ~/bin to PATH if not already there
-if ! grep -q 'HOME/bin' ~/.zshrc; then
-  echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
-fi
-
-export PATH="$HOME/bin:$PATH"
-echo "✅ chezmoi $(chezmoi --version | head -1) installed"
-
-# =============================================================================
-# SECTION 7: HACK NERD FONT
+# SECTION 5: HACK NERD FONT
 # Must be installed before Ghostty is launched, otherwise Ghostty falls back
-# to a default font and the terminal looks wrong.
-#
-# Hack Nerd Font is a patched version of the Hack monospace font with
-# thousands of extra icons/glyphs added. Required by:
-# - Ghostty config (font-family = Hack Nerd Font)
-# - Neovim plugins (lualine, mini-icons, oil.nvim use nerd font glyphs)
-# - Oh My Zsh robbyrussell theme (uses special prompt characters)
+# to a default font. Required by the Ghostty config, lualine, mini-icons,
+# oil.nvim and the robbyrussell prompt.
 # =============================================================================
 
 echo "→ Installing Hack Nerd Font..."
 
 mkdir -p ~/.local/share/fonts
-
 BASE_URL="https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/Hack"
 
-curl -fLo ~/.local/share/fonts/HackNerdFont-Regular.ttf \
-  "$BASE_URL/Regular/HackNerdFont-Regular.ttf"
+for style in Regular Bold Italic BoldItalic; do
+  if [ ! -f ~/.local/share/fonts/HackNerdFont-$style.ttf ]; then
+    curl -fLo ~/.local/share/fonts/HackNerdFont-$style.ttf \
+      "$BASE_URL/$style/HackNerdFont-$style.ttf"
+  fi
+done
 
-curl -fLo ~/.local/share/fonts/HackNerdFont-Bold.ttf \
-  "$BASE_URL/Bold/HackNerdFont-Bold.ttf"
-
-curl -fLo ~/.local/share/fonts/HackNerdFont-Italic.ttf \
-  "$BASE_URL/Italic/HackNerdFont-Italic.ttf"
-
-curl -fLo ~/.local/share/fonts/HackNerdFont-BoldItalic.ttf \
-  "$BASE_URL/BoldItalic/HackNerdFont-BoldItalic.ttf"
-
-fc-cache -fv
+fc-cache -f
 echo "✅ Hack Nerd Font installed and font cache refreshed"
 
 # =============================================================================
+# SECTION 6: ZSH + OH MY ZSH + PLUGINS
+# Oh My Zsh must exist before chezmoi applies .zshrc, because .zshrc loads
+# $ZSH/oh-my-zsh.sh and the two custom plugins below.
+# KEEP_ZSHRC=yes stops the installer from replacing an existing .zshrc.
+# =============================================================================
+
+if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$(command -v zsh)" ]; then
+  echo "→ Setting Zsh as default shell..."
+  chsh -s "$(command -v zsh)"
+  echo "✅ Zsh set as default shell (takes effect after logout/login)"
+fi
+
+if [ ! -d ~/.oh-my-zsh ]; then
+  echo "→ Installing Oh My Zsh..."
+  KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  echo "✅ Oh My Zsh installed"
+fi
+
+ZSH_PLUGINS="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+for plugin in zsh-autosuggestions zsh-syntax-highlighting; do
+  if [ ! -d "$ZSH_PLUGINS/$plugin" ]; then
+    git clone "https://github.com/zsh-users/$plugin" "$ZSH_PLUGINS/$plugin"
+  fi
+done
+echo "✅ Zsh plugins installed"
+
+# =============================================================================
+# SECTION 7: CHEZMOI
+# Installed to ~/bin. -b is required: the installer's default is ./bin
+# relative to the CURRENT directory, which would put it inside the repo.
+# ~/bin is on PATH via the chezmoi-managed ~/.zshrc; exported here for the
+# rest of this script.
+# =============================================================================
+
+export PATH="$HOME/bin:$PATH"
+
+if ! command -v chezmoi >/dev/null; then
+  echo "→ Installing chezmoi..."
+  sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/bin"
+fi
+echo "✅ $(chezmoi --version | head -1)"
+
+# =============================================================================
 # SECTION 8: APPLY DOTFILES VIA CHEZMOI
-# This deploys all configs from the GitHub repo to their correct locations:
-# - ~/.config/ghostty/config
-# - ~/.config/nvim/ (full Neovim config)
-# - ~/.zshrc
-# - ~/.gitconfig
+# Uses HTTPS so it works before an SSH key exists. If the repo is already
+# cloned in ~/.local/share/chezmoi (README quick start), init reuses it.
+# Deploys .zshrc, .gitconfig, .gitignore_global, .ssh/config, Ghostty,
+# Neovim, and the GTK 3/4 theme CSS (Linux only).
 # =============================================================================
 
 echo "→ Applying dotfiles via chezmoi..."
-chezmoi init git@github.com:mikejmz24/dotfiles_config.git
+chezmoi init "$REPO_URL"
 chezmoi apply
 echo "✅ Dotfiles applied"
 
 # =============================================================================
 # SECTION 9: PYTHON PACKAGES FOR NEOVIM
-# These must be installed AFTER chezmoi applies the Neovim config,
-# because Mason (Neovim's LSP manager) will try to use them on first launch.
+# Installed after chezmoi applies the Neovim config, before Mason first runs.
+#   pynvim    Python provider for Neovim (:checkhealth)
+#   pyright   Python type checker / LSP
+#   black     Python formatter (conform.nvim)
+#   isort     Python import sorter (conform.nvim)
+#   pylint    Python linter (nvim-lint)
+#   sqlfluff  SQL linter + formatter
 #
-# --break-system-packages flag is required on Ubuntu 24.04 because pip
-# is restricted by PEP 668 to avoid conflicts with system Python packages.
+# --break-system-packages is required on Ubuntu (PEP 668). Without sudo, pip
+# installs into ~/.local, leaving system Python untouched.
 # =============================================================================
 
 echo "→ Installing Python packages for Neovim..."
-
-pip install \
-  pynvim \    # Python provider for Neovim. Required for Python-based plugins and :checkhealth.
-  pyright \   # Python type checker and LSP. Used by Mason's pyright install.
-  black \     # Python code formatter. Used by conform.nvim for Python files.
-  isort \     # Python import sorter. Used by conform.nvim alongside black.
-  pylint \    # Python linter. Used by nvim-lint for Python diagnostics.
-  sqlfluff \  # SQL linter and formatter. Used by conform.nvim and nvim-lint for SQL files.
-  --break-system-packages
-
+pip install --user --break-system-packages \
+  pynvim pyright black isort pylint sqlfluff
 echo "✅ Python packages installed"
 
 # =============================================================================
 # SECTION 10: CHROMIUM AS DEFAULT BROWSER
-# Configures GNOME to use Chromium as the default web browser.
 # =============================================================================
 
 echo "→ Setting Chromium as default browser..."
 
 sudo update-alternatives --install \
-  /usr/bin/x-www-browser \
-  x-www-browser \
-  /usr/bin/chromium-browser 50
-
+  /usr/bin/x-www-browser x-www-browser /usr/bin/chromium-browser 50
 sudo update-alternatives --install \
-  /usr/bin/gnome-www-browser \
-  gnome-www-browser \
-  /usr/bin/chromium-browser 50
-
-gsettings set org.gnome.desktop.default-applications.web-browser 'chromium-browser.desktop'
+  /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/chromium-browser 50
+xdg-settings set default-web-browser chromium_chromium.desktop 2>/dev/null || true
 
 echo "✅ Chromium set as default browser"
 
 # =============================================================================
 # SECTION 11: GHOSTTY AS DEFAULT TERMINAL
-# Configures GNOME to use Ghostty when opening a terminal from the file
-# manager (Nautilus) or keyboard shortcut (Ctrl+Alt+T).
+# Used by Nautilus "Open in Terminal" and Ctrl+Alt+T.
 # =============================================================================
 
 echo "→ Setting Ghostty as default terminal..."
 
-gsettings set org.gnome.desktop.default-applications.terminal exec 'ghostty'
-
+gsettings set org.gnome.desktop.default-applications.terminal exec 'ghostty' 2>/dev/null || true
 sudo update-alternatives --install \
-  /usr/bin/x-terminal-emulator \
-  x-terminal-emulator \
-  $(which ghostty) 50
+  /usr/bin/x-terminal-emulator x-terminal-emulator "$(command -v ghostty)" 50
 
 echo "✅ Ghostty set as default terminal"
 
 # =============================================================================
-# SECTION 12: GNOME SETTINGS
-# Apply all GNOME customizations documented in linux-gnome-settings.sh
+# SECTION 12: GTK THEME — Nordic with Admiral accent #2354a0
+# The theme files are downloaded here; the customized gtk.css files for
+# GTK 3 and GTK 4 are managed by chezmoi (dot_config/private_gtk-*), so this
+# script never edits them. An existing ~/.local/share/themes/Nordic is left
+# untouched (it may be a different Nordic version than the latest release).
 # =============================================================================
 
-echo "→ Applying GNOME settings..."
-bash "$(dirname "$0")/linux-gnome-settings.sh"
-echo "✅ GNOME settings applied"
+echo "→ Setting up Nordic theme..."
 
-# =============================================================================
-# SECTION 13: SSH KEY SETUP (MANUAL STEP)
-# SSH keys cannot be automated — they must be generated fresh on each machine
-# and manually added to GitHub. This section prints instructions.
-# =============================================================================
+THEME_DIR="$HOME/.local/share/themes/Nordic"
+if [ ! -d "$THEME_DIR" ]; then
+  mkdir -p ~/.local/share/themes
+  curl -fsSL https://github.com/EliverLara/Nordic/releases/latest/download/Nordic.tar.xz \
+    | tar -xJ -C ~/.local/share/themes
+fi
 
-echo ""
-echo "============================================="
-echo " MANUAL STEP REQUIRED: SSH Key Setup"
-echo "============================================="
-echo ""
-echo "Run these commands to set up your SSH key:"
-echo ""
-echo "  ssh-keygen -t ed25519 -C 'YOUR_ID+mikejmz24@users.noreply.github.com'"
-echo "  eval \"\$(ssh-agent -s)\""
-echo "  ssh-add ~/.ssh/id_ed25519"
-echo "  cat ~/.ssh/id_ed25519.pub"
-echo ""
-echo "Then go to: GitHub → Settings → SSH and GPG keys → New SSH key"
-echo "Paste the output of 'cat ~/.ssh/id_ed25519.pub' and save."
-echo ""
-echo "Test with: ssh -T git@github.com"
-echo ""
-
-# =============================================================================
-# SECTION 14: GNOME EXTENSIONS (MANUAL STEP)
-# Install via: sudo apt install gnome-shell-extension-manager
-# Then open extension-manager and install:
-# 1. "Hide Top Bar" by tuxor1337 (NOT sonersg)
-# 2. "Just Perfection"
-# See README for configuration details.
-# =============================================================================
-
-echo ""
-echo "MANUAL STEP: Install GNOME extensions via Extension Manager"
-echo "  sudo apt install gnome-shell-extension-manager"
-echo "  extension-manager &"
-echo "  Install: 'Hide Top Bar' by tuxor1337 and 'Just Perfection'"
-echo ""
-
-# =============================================================================
-# SECTION 15: SYSTEM76 DRIVER AND FIRMWARE
-# system76-driver: hardware integration for Darter Pro 11
-# system76-firmware-cli: firmware updates (reboot to apply)
-# =============================================================================
-
-echo "→ Installing System76 driver..."
-sudo apt install -y system76-driver
-echo "✅ System76 driver installed"
-
-echo "→ Checking for firmware updates..."
-sudo system76-firmware-cli schedule && echo "Firmware scheduled — reboot to install" \
-  || echo "Firmware already up to date"
-
-# =============================================================================
-# DONE
-# =============================================================================
-
-echo "============================================="
-echo " Setup complete!"
-echo ""
-echo " Next steps:"
-echo " 1. Log out and back in (activates Zsh as default shell)"
-echo " 2. Open Ghostty"
-echo " 3. Open nvim — lazy.nvim will auto-install all plugins"
-echo " 4. Inside nvim run: :checkhealth"
-echo " 5. Complete the SSH key setup above"
-echo "============================================="
-
-# =============================================================================
-# GTK Theme — Nordic with navy accent #2354a0 (Admiral)
-# =============================================================================
-echo "Setting up Nordic theme..."
-
-# Apply Nordic theme
 gsettings set org.gnome.desktop.interface gtk-theme 'Nordic'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 
-# GTK-4.0 — copy full Nordic theme CSS and apply fixes
+# GTK 4 apps read gtk-dark.css and assets/ from ~/.config/gtk-4.0 — point
+# them at Nordic (they previously pointed at an old Graphite theme).
 mkdir -p ~/.config/gtk-4.0
-cp ~/.local/share/themes/Nordic/gtk-4.0/gtk.css ~/.config/gtk-4.0/gtk.css
+ln -sfn "$THEME_DIR/gtk-4.0/gtk-dark.css" ~/.config/gtk-4.0/gtk-dark.css
+if [ -d "$THEME_DIR/gtk-4.0/assets" ]; then
+  ln -sfn "$THEME_DIR/gtk-4.0/assets" ~/.config/gtk-4.0/assets
+fi
 
-# Fix symlinks to point to Nordic (not Graphite)
-ln -sf ~/.local/share/themes/Nordic/gtk-4.0/assets ~/.config/gtk-4.0/assets
-ln -sf ~/.local/share/themes/Nordic/gtk-4.0/gtk-dark.css ~/.config/gtk-4.0/gtk-dark.css
+echo "✅ Nordic theme applied"
 
-# Fix sidebar selected row text color (was hardcoded to Admiral blue)
-sed -i '/\.sidebar-pane placessidebar \.navigation-sidebar > row:selected,/{
-  n; n
-  s/color: #2354a0;/color: #ffffff;/
-}' ~/.config/gtk-4.0/gtk.css
+# =============================================================================
+# SECTION 13: GNOME SETTINGS
+# Scaling flag, window keybindings, dock, workspaces.
+# =============================================================================
 
-# Append Nautilus sidebar + file grid selection overrides
-cat >> ~/.config/gtk-4.0/gtk.css << 'GTKEOF'
+echo "→ Applying GNOME settings..."
+bash "$SCRIPT_DIR/linux-gnome-settings.sh"
+echo "✅ GNOME settings applied"
 
-/* Nautilus sidebar + file grid — high contrast for accessibility */
-placessidebar row:selected label.sidebar-label {
-  color: #ffffff;
-  font-weight: bold;
-}
+# =============================================================================
+# SECTION 14: SYSTEM76 DRIVER AND FIRMWARE
+# Only available when the System76 apt repository is configured (it ships
+# with System76's factory Ubuntu image). Skipped otherwise.
+# =============================================================================
 
-placessidebar row:selected {
-  background-color: #0f2347;
-  background-image: none;
-  border-radius: 6px;
-}
+if apt-cache show system76-driver >/dev/null 2>&1; then
+  echo "→ Installing System76 driver..."
+  sudo apt install -y system76-driver
+  echo "✅ System76 driver installed"
 
-gridview > child:selected {
-  background-color: rgba(35, 84, 160, 0.5);
-  border-radius: 8px;
-  outline: 2px solid #2354a0;
-}
-GTKEOF
+  echo "→ Checking for firmware updates..."
+  sudo system76-firmware-cli schedule && echo "Firmware scheduled — reboot to install" \
+    || echo "Firmware already up to date"
+else
+  echo "⚠️  system76-driver not available (System76 apt repo not configured) — skipped"
+fi
 
-# GTK-3.0 selection color override
-mkdir -p ~/.config/gtk-3.0
-cat > ~/.config/gtk-3.0/gtk.css << 'GTKEOF'
-@define-color selected_bg_color #2354a0;
-@define-color selected_fg_color #ffffff;
-GTKEOF
+# =============================================================================
+# DONE — manual steps
+# =============================================================================
 
-# Chromium selection color override (via user CSS if using Chromium as default browser)
-# Note: Chromium doesn't have the same per-profile CSS overrides like Firefox,
-# but the system GTK theme should apply to most UI elements.
-
-echo "✅ Nordic theme and overrides applied"
+echo ""
+echo "============================================="
+echo " Setup complete! Manual steps remaining:"
+echo "============================================="
+echo ""
+echo "1. SSH key (needed to push to GitHub):"
+echo "     ssh-keygen -t ed25519 -C 'YOUR_ID+mikejmz24@users.noreply.github.com'"
+echo "     eval \"\$(ssh-agent -s)\" && ssh-add ~/.ssh/id_ed25519"
+echo "     cat ~/.ssh/id_ed25519.pub   # add at GitHub → Settings → SSH keys"
+echo "     ssh -T git@github.com"
+echo "   Then switch the dotfiles remote from HTTPS to SSH:"
+echo "     git -C ~/.local/share/chezmoi remote set-url origin git@github.com:mikejmz24/dotfiles_config.git"
+echo ""
+echo "2. GNOME extensions:"
+echo "     sudo apt install gnome-shell-extension-manager && extension-manager &"
+echo "     Install 'Hide Top Bar' by tuxor1337 and 'Just Perfection'"
+echo ""
+echo "3. Log out and back in (activates Zsh and the Nordic theme)"
+echo "4. Open nvim — lazy.nvim installs all plugins; then run :checkhealth"
+echo "5. Settings → Displays: set the external monitor's scale (e.g. 150%)"
+echo ""
