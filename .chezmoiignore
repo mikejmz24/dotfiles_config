@@ -15,6 +15,7 @@ Brewfile
 
 # Nordic GTK theming — Ubuntu only
 {{ if ne .os "linux" }}
+Documents
 .config/gtk-3.0
 .config/gtk-3.0/**
 .config/gtk-4.0
