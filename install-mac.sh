@@ -41,15 +41,18 @@ echo "✅ Xcode Command Line Tools ready"
 # =============================================================================
 
 echo "→ Installing Homebrew..."
-if ! command -v brew &>/dev/null; then
+if [ ! -x /opt/homebrew/bin/brew ]; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  # Add Homebrew to PATH for Apple Silicon Macs
-  # shellcheck disable=SC2016  # written literally on purpose
-  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-  eval "$(/opt/homebrew/bin/brew shellenv)"
 else
   echo "Homebrew already installed"
 fi
+# Add Homebrew to PATH for Apple Silicon Macs — once in ~/.zprofile, and
+# always for this script (a re-run from the same terminal may not have it yet)
+if ! grep -qs 'brew shellenv' ~/.zprofile; then
+  # shellcheck disable=SC2016  # written literally on purpose
+  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+fi
+eval "$(/opt/homebrew/bin/brew shellenv)"
 echo "✅ Homebrew $(brew --version | head -1) ready"
 
 # =============================================================================
@@ -170,23 +173,29 @@ echo "✅ Zsh plugins installed"
 # tree-sitter, Docker, gh, GUI apps, VSCode extensions, Nerd Fonts.
 #
 # "$HOME", not "~": a tilde after "--file=" is NOT expanded by bash.
+# One failed entry (e.g. a renamed cask) makes brew bundle exit non-zero;
+# that is reported but doesn't stop the rest of the setup.
 # =============================================================================
 
 echo "→ Installing Homebrew packages from Brewfile..."
-brew bundle install --file="$HOME/Brewfile"
-echo "✅ All Homebrew packages installed"
-
-# =============================================================================
-# SECTION 9: RUST TOOLCHAIN INIT
-# rustup is installed by Homebrew but the toolchain itself needs initializing.
-# =============================================================================
-
-if [ ! -f "$HOME/.cargo/env" ]; then
-  echo "→ Initializing Rust toolchain..."
-  rustup-init -y
+if brew bundle install --file="$HOME/Brewfile"; then
+  echo "✅ All Homebrew packages installed"
+else
+  echo "⚠️  Some Brewfile entries failed — see above. Continuing."
 fi
-# shellcheck disable=SC1091
-source "$HOME/.cargo/env"
+
+# =============================================================================
+# SECTION 9: RUST TOOLCHAIN
+# Homebrew's rustup is keg-only and no longer ships `rustup-init`: its bin
+# dir (rustup plus cargo/rustc proxies) must be on PATH — ~/.zshrc does that
+# for new shells — and the stable toolchain is installed with rustup itself.
+# =============================================================================
+
+export PATH="/opt/homebrew/opt/rustup/bin:$PATH"
+if ! rustup toolchain list | grep -q stable; then
+  echo "→ Installing Rust stable toolchain..."
+  rustup default stable
+fi
 echo "✅ $(rustc --version) ready"
 
 # =============================================================================

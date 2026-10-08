@@ -469,7 +469,7 @@ See `install-mac.sh` for full details. Install order matters:
 
 1. Xcode CLI Tools → 2. Homebrew → 3. chezmoi → 4. `chezmoi.toml` (manual, `nano`)
    → 5. SSH key (manual) → 6. `chezmoi apply` → 7. Oh My Zsh + zsh plugins
-   → 8. `brew bundle install` → 9. `rustup-init` → 10. Go tools
+   → 8. `brew bundle install` → 9. `rustup default stable` → 10. Go tools
    → 11. Python tools (pipx + pynvim) → 12. `~/.gitconfig-work` (manual)
 
 The repo is cloned over HTTPS. Once your SSH key is on GitHub, switch the remote
@@ -582,7 +582,7 @@ chezmoi update
 | **Go**            | gopls, gofumpt, goimports, sqls, jq-lsp, air, templ | Both     |
 | **Node.js**       | html-lsp, css-lsp, prettier, pyright                | Both     |
 | **Python 3.12**   | pyright, black, isort, pylint, sqlfluff             | Both     |
-| **Rust (rustup)** | cargo, cargo-c — run `rustup-init` after install    | Mac      |
+| **Rust (rustup)** | cargo, cargo-c — `rustup default stable` after install | Mac   |
 
 ### Python Tools
 
@@ -738,6 +738,7 @@ If treesitter breaks, see Troubleshooting → Neovim Treesitter errors.
   - `$HOME/.local/bin` — fd symlink (Linux only)
   - `$HOME/go/bin` — Go tools (both)
   - `/Library/TeX/texbin` — MacTeX (Mac only)
+  - `/opt/homebrew/opt/rustup/bin` — keg-only rustup: cargo, rustc (Mac only)
   - `$HOME/.local/share/nvim/mason/bin` — Mason binaries (both)
 
 > **Installing Zsh plugins on a new machine:** both install scripts clone them.
@@ -1251,9 +1252,13 @@ chezmoi apply ~/.zshrc
 
 ### Rust not available after install
 
+Homebrew's `rustup` is keg-only and no longer provides `rustup-init`. `~/.zshrc`
+adds its bin dir to PATH on the Mac; then install the toolchain:
+
 ```bash
-source "$HOME/.cargo/env"
-# Or add to ~/.zshrc permanently
+export PATH="/opt/homebrew/opt/rustup/bin:$PATH"   # already in ~/.zshrc
+rustup default stable
+rustc --version
 ```
 
 ### Docker CLI not working on Mac

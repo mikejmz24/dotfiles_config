@@ -104,7 +104,8 @@ export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 
 # Mac-only paths
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  . "$HOME/.local/bin/env"
+  [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"   # uv, if installed
+  export PATH="/opt/homebrew/opt/rustup/bin:$PATH"            # keg-only rustup (cargo, rustc)
   export PATH="/Library/TeX/texbin:$PATH"
 fi
 

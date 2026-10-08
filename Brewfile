@@ -48,7 +48,8 @@ brew "python@3.12"      # Python interpreter. Required by pyright, black, isort,
 # Rust toolchain — installed via rustup for version management
 brew "rustup"           # Rust toolchain installer and version manager.
                         # Manages stable/nightly/beta Rust versions.
-                        # After install, run: rustup-init
+                        # Keg-only: ~/.zshrc adds /opt/homebrew/opt/rustup/bin to PATH.
+                        # After install, run: rustup default stable
 brew "cargo-c"          # Cargo subcommand for building C-compatible libraries from Rust crates.
 
 # =============================================================================
