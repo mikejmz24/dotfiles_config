@@ -27,7 +27,7 @@ tap "homebrew/cask-fonts"   # Provides access to Nerd Font casks
 brew "git"          # Version control. Required by chezmoi, nvim plugins, and everything else.
 brew "neovim"       # Hyperextensible text editor. Primary editor for all development work.
 brew "ripgrep"      # (rg) Extremely fast file content search. Required by Telescope in Neovim.
-brew "fd"           # Fast file finder. Required by Telescope for extended file search.
+brew "fd"           # Fast file finder. Optional (Telescope uses rg); keeps :checkhealth lazy clean.
 brew "tree"         # Displays directory structure as a visual tree.
 brew "jq"           # Command-line JSON processor. Required by jq-lsp in Neovim.
 brew "xz"           # Compression/decompression for .xz and .tar.xz files.

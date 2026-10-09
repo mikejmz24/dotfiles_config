@@ -568,7 +568,7 @@ chezmoi update
 | Tool        | Command | What It Does                          | Notes                                                       |
 | ----------- | ------- | ------------------------------------- | ----------------------------------------------------------- |
 | **ripgrep** | `rg`    | Searches file contents fast           | Required by Telescope in Neovim                             |
-| **fd**      | `fd`    | Finds files fast                      | Required by Telescope. Ubuntu: `fdfind` → symlinked to `fd` |
+| **fd**      | `fd`    | Finds files fast                      | Optional — Telescope uses `rg`. Keeps `:checkhealth lazy` clean. Ubuntu: `fdfind` → symlinked to `fd` |
 | **tree**    | `tree`  | Shows directory structure             | Project navigation                                          |
 | **jq**      | `jq`    | Processes JSON                        | Required by jq-lsp in Neovim                                |
 | **bat**     | `bat`   | Better `cat` with syntax highlighting | Mac only (in Brewfile)                                      |
@@ -721,6 +721,20 @@ grep '"nvim-treesitter' ~/.config/nvim/lazy-lock.json
 
 **Never run `:Lazy update` without checking the treesitter changelog first.**
 If treesitter breaks, see Troubleshooting → Neovim Treesitter errors.
+
+### Expected `:checkhealth` results
+
+The goal is zero errors (❌). A few warnings are expected and harmless:
+
+| Section                            | Result                     | Why it's fine                                                                                                                                                                     |
+| ---------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lazy` → luarocks                  | Disabled (no error)        | `rocks = { enabled = false }` in `lazy.lua`. No plugin here needs Lua libraries from luarocks, so it isn't installed on either machine.                                            |
+| `mason` → Languages → `luarocks`   | ⚠️ not available           | Mason lists every toolchain it _could_ use. Nothing in `mason.lua` installs from luarocks. Other unused languages (PHP, Java, Julia, …) warn for the same reason.                   |
+| `lazy` → External dependencies `fd` | ✅ found                    | `fd` is optional — Telescope's `find_files` is hard-wired to `rg` in `telescope.lua`. Kept (tiny) so the check is clean and `fd` works in the shell. On Ubuntu needs the symlink. |
+
+Re-enable luarocks only if lazy.nvim or `:MasonInstall` says a new plugin/tool
+requires it: remove the `rocks` block and add `brew "luarocks"` (Mac) or
+`apt install luarocks` (Linux).
 
 ---
 
@@ -1217,11 +1231,18 @@ sudo apt install wl-clipboard
 # Inside nvim: :checkhealth provider
 ```
 
-### fd not found by Telescope on Linux
+### `fd: not found` in `:checkhealth lazy` (Linux)
+
+Ubuntu installs fd as `fdfind`. `install-linux.sh` creates the `fd` symlink; on a
+machine set up before that, create it by hand:
 
 ```bash
-mkdir -p ~/.local/bin && ln -s $(which fdfind) ~/.local/bin/fd
+mkdir -p ~/.local/bin && ln -sf "$(command -v fdfind)" ~/.local/bin/fd
 ```
+
+`~/.local/bin` is on PATH via `~/.zshrc`, so run `nvim` from a terminal — apps
+started from the GNOME launcher don't read `~/.zshrc`. Telescope itself doesn't
+need fd (it uses `rg`); this only clears the health warning.
 
 ### A `.config/` folder appeared in the chezmoi source
 

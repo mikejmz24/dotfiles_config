@@ -75,7 +75,8 @@ echo "✅ chezmoi.toml found"
 #   python3-pip      Installs the Python tools in section 10.
 #   python3-venv     Required by Mason's Python tooling.
 #   wl-clipboard     Wayland clipboard (wl-copy/wl-paste) for Neovim.
-#   fd-find          (fdfind on Ubuntu) Fast file finder. Required by Telescope.
+#   fd-find          (fdfind on Ubuntu) Fast file finder. Optional (Telescope uses rg);
+#                    kept so `:checkhealth lazy` is clean and `fd` works in the shell.
 #   chromium-browser Browser. Used instead of Firefox (Wayland issues on System76).
 # =============================================================================
 
