@@ -15,6 +15,11 @@ require("lazy").setup({
 	{ import = "mikejmnz.plugins" },
 	{ import = "mikejmnz.plugins.lsp" },
 }, {
+	-- No plugin in this config needs Lua libraries from luarocks.
+	-- Re-enable if lazy.nvim ever says a new plugin requires it.
+	rocks = {
+		enabled = false,
+	},
 	checker = {
 		enabled = true,
 		notify = false,

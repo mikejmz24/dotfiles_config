@@ -82,7 +82,6 @@ go "github.com/a-h/templ/cmd/templ"     # HTML templating language for Go. Compi
 
 brew "tree-sitter"      # Tree-sitter parsing library. Used internally by Neovim.
 brew "tree-sitter-cli"  # CLI for developing/testing tree-sitter grammars.
-brew "luarocks"         # Lua package manager. Used by some Neovim plugins.
 
 # =============================================================================
 # GO LINTING
