@@ -786,6 +786,7 @@ bash ~/.local/share/chezmoi/linux-gnome-settings.sh
   - `Super+Up` — maximize window (keeps top bar visible)
   - `Super+F` — true fullscreen (hides everything including top bar)
 - Disables `ubuntu-dock` and hides the GNOME built-in dash via Just Perfection
+- Hides the top bar via Just Perfection (shown in the Activities overview — press `Super`)
 - Clears `Super+1-9` from the dash app launcher, then rebinds:
   - `Super+1-9` — switch to workspace N
   - `Super+Shift+1-9` — move window to workspace N
@@ -864,26 +865,29 @@ sudo apt install gnome-shell-extension-manager
 extension-manager &
 ```
 
-**1. Hide Top Bar (tuxor1337)**
-Search "hide top bar" → install by **tuxor1337** (NOT sonersg — no settings).
-
-- Auto-hides top bar when any window is active
-- Shows bar when mouse moves to top edge
-- Zero performance impact — no blur, no animations
-
-**2. Just Perfection**
+**Just Perfection**
 Search "just perfection" and install.
 Configure via `dconf`:
 
 ```bash
+# Hide the dock/dash
 dconf write /org/gnome/shell/extensions/just-perfection/dash false
 dconf write /org/gnome/shell/extensions/just-perfection/dash-app-running false
 dconf write /org/gnome/shell/extensions/just-perfection/dash-separator false
 dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
+# Hide the top bar on the desktop, show it in the Activities overview
+dconf write /org/gnome/shell/extensions/just-perfection/panel false
+dconf write /org/gnome/shell/extensions/just-perfection/panel-in-overview true
 ```
 
 Required because disabling `ubuntu-dock` falls back to GNOME's built-in dash
-which can only be hidden via this extension. Hides dock from Activities overview.
+which can only be hidden via this extension. It also hides the top bar: press
+`Super` to see the clock, system menu and power options.
+
+> **Why not "Hide Top Bar"?** It was used before, but it reveals the bar with an
+> invisible hover strip along the top edge, and it was a suspect in clicks not
+> reaching windows after closing/opening the lid. Just Perfection turns the bar
+> off without any hover strip. Don't install both.
 
 > **Order doesn't matter:** `linux-gnome-settings.sh` writes the Just Perfection
 > keys with `dconf`, which stores them even before the extension is installed.
@@ -995,7 +999,7 @@ and battery extensions specific to the Darter Pro 11.
 | Work identity     | `~/.gitconfig-work` (manual)      | Not needed                                               |
 | bat               | Available                         | Not installed (Mac only)                                 |
 | Docker            | Docker Desktop                    | Not installed                                            |
-| Top bar           | Native macOS                      | Auto-hidden via Hide Top Bar extension                   |
+| Top bar           | Native macOS                      | Hidden via Just Perfection (shown on `Super`)            |
 
 ---
 
@@ -1328,6 +1332,5 @@ sudo apt update 2>&1 | grep system76  # check if back online
 - [Oh My Zsh](https://ohmyz.sh/)
 - [Nerd Fonts](https://www.nerdfonts.com/)
 - [System76 Darter Pro](https://system76.com/laptops/darter)
-- [Hide Top Bar extension](https://extensions.gnome.org/extension/545/hide-top-bar/)
 - [nvim-treesitter archived (April 2026)](https://byteiota.com/nvim-treesitter-archived-13k-star-plugin-shut-down-2026/)
 - [dotfiles.github.io](https://dotfiles.github.io/)

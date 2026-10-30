@@ -7105,7 +7105,7 @@ datechooser button.day.flat.text-button:selected,
 datechooser button.day.flat.text-button.today:selected,
 datechooser button.day.flat.text-button:selected:focus,
 datechooser button.day.flat.text-button.today:selected:focus {
-  background-image: color(#2354a0);
+  background-image: image(#2354a0);
   color: white;
   font-weight: bold;
 }

@@ -390,7 +390,7 @@ echo "     git -C ~/.local/share/chezmoi remote set-url origin git@github.com:mi
 echo ""
 echo "2. GNOME extensions:"
 echo "     sudo apt install gnome-shell-extension-manager && extension-manager &"
-echo "     Install 'Hide Top Bar' by tuxor1337 and 'Just Perfection'"
+echo "     Install 'Just Perfection' (linux-gnome-settings.sh already wrote its settings)"
 echo ""
 echo "3. Log out and back in (activates Zsh and the Nordic theme)"
 echo "4. Open nvim — lazy.nvim installs all plugins; then run :checkhealth"

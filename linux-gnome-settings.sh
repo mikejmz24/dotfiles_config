@@ -52,6 +52,17 @@ dconf write /org/gnome/shell/extensions/just-perfection/dash-app-running false
 dconf write /org/gnome/shell/extensions/just-perfection/dash-separator false
 dconf write /org/gnome/shell/extensions/just-perfection/show-apps-button false
 
+# =============================================================================
+# TOP BAR — Hidden on the desktop, shown in the Activities overview
+# Press Super to see the clock, system menu and power options.
+# Done with Just Perfection instead of the "Hide Top Bar" extension: Hide Top
+# Bar keeps an invisible hover strip at the top edge to reveal the bar, and it
+# was a suspect in clicks not reaching windows after monitor changes (lid
+# close/open). Just Perfection simply turns the bar off — no hover strip.
+# =============================================================================
+dconf write /org/gnome/shell/extensions/just-perfection/panel false
+dconf write /org/gnome/shell/extensions/just-perfection/panel-in-overview true
+
 # ── Workspace keybindings ──────────────────────────────
 # Clear Super+1-9 from dash app launcher
 for i in {1..9}; do
