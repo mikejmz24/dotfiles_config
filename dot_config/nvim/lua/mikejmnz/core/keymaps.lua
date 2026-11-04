@@ -150,3 +150,15 @@ keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move selection down" })
 -- Better indenting in visual mode (reselects after indent so you can repeat)
 keymap.set("v", ">", ">gv", { desc = "Indent right and reselect" })
 keymap.set("v", "<", "<gv", { desc = "Indent left and reselect" })
+
+-- Linux only: the Split60 firmware sends Super where macOS sends Ctrl.
+-- Translate <D-x> back to <C-x> so Neovim behaves the same as on the Mac.
+-- remap = true so plugin and buffer-local <C-x> mappings still fire.
+if vim.fn.has("linux") == 1 then
+	local keys = vim.split("abcdefghijklmnopqrstuvwxyz[]\\", "")
+	table.insert(keys, "Space") -- <C-Space> (completion)
+
+	for _, k in ipairs(keys) do
+		keymap.set({ "n", "i", "v", "o", "c", "t" }, "<D-" .. k .. ">", "<C-" .. k .. ">", { remap = true })
+	end
+end
